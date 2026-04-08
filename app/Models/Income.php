@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Booking;
+use App\Models\Payment;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Income extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'payment_id',
+        'amount',
+        'income_type',
+        'description',
+        'date',
+    ];
+
+   
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class);
+    }
+
+   
+    public function payment()
+    {
+        return $this->belongsTo(Payment::class);
+    }
+
+    public function isBookingIncome(): bool
+    {
+        return $this->income_type === 'booking';
+    }
+
+    public function isOtherIncome(): bool
+    {
+        return $this->income_type === 'other';
+    }
+}
