@@ -2,13 +2,12 @@
 
 namespace App\Filament\Admin\Resources\DeliveryOrders\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\Select;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\TextColumn\RelationshipColumn; // Use this for related columns
 use Filament\Tables\Table;
 
 class DeliveryOrdersTable
@@ -17,31 +16,27 @@ class DeliveryOrdersTable
     {
         return $table
             ->columns([
-                TextColumn::make('booking_id')
+                TextColumn::make('booking.booking_code')
                     ->label('Booking')
-                    ->relationship('booking', 'booking_code') 
                     ->sortable(),
 
-                TextColumn::make('driver_id')
+                TextColumn::make('driver.name')
                     ->label('Sopir')
-                    ->relationship('driver', 'name') 
                     ->sortable(),
 
-                TextColumn::make('vehicle_id')
+                TextColumn::make('vehicle.brand')
                     ->label('Kendaraan')
-                    ->relationship('vehicle', 'brand') 
                     ->sortable(),
-            
-                TextColumn::make('schedule_id')
+
+                TextColumn::make('schedule.departure_datetime')
                     ->label('Waktu Keberangkatan')
-                    ->relationship('schedule', 'departure_datetime') 
-                    ->dateTime('d M Y H:i')  
+                    ->dateTime('d M Y H:i')
                     ->sortable(),
-                
+
                 TextColumn::make('pickup_point')
                     ->label('Titik Penjemputan')
                     ->sortable(),
-            
+
                 TextColumn::make('destination')
                     ->label('Tujuan')
                     ->sortable(),
@@ -50,13 +45,21 @@ class DeliveryOrdersTable
                     ->label('Status')
                     ->sortable(),
             ])
-            ->filters([ 
+            ->filters([
 
             ])
-            ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+            ->headerActions([
+                Action::make('generate')
+                    ->label('Generate Delivery Order')
+                    ->icon(Heroicon::ClipboardDocument)
+                    ->form([
+                        Select::make('booking_id')
+                            ->relationship('booking', 'booking_code')
+                            ->required(),
+                        Select::make('driver_id')
+                            ->relationship('driver', 'name')
+                            ->required(),
+                    ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

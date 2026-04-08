@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -38,13 +39,13 @@ class BookingsTable
                     ->badge()
                     ->icon(
                         fn($state) => $state === 'Eksklusif'
-                            ? 'heroicon-o-star'
-                            : 'heroicon-o-user-group'
+                        ? 'heroicon-o-star'
+                        : 'heroicon-o-user-group'
                     )
                     ->color(
                         fn($state) => $state === 'Eksklusif'
-                            ? 'success'
-                            : 'gray'
+                        ? 'success'
+                        : 'gray'
                     ),
 
                 TextColumn::make('pickup_location')
@@ -74,9 +75,13 @@ class BookingsTable
                     ->weight('bold')
                     ->color('success'),
 
+                TextColumn::make('pickup_date')
+                    ->label('Tanggal Jemput')
+                    ->icon('heroicon-o-clock')
+                    ->placeholder('-'),
+
                 TextColumn::make('pickup_time')
-                    ->label('Jemput')
-                    ->dateTime('d M Y, H:i')
+                    ->label('Waktu Jemput')
                     ->icon('heroicon-o-clock')
                     ->placeholder('-'),
 
@@ -85,13 +90,13 @@ class BookingsTable
                     ->badge()
                     ->icon(
                         fn($state) => $state === 'paid'
-                            ? 'heroicon-o-check-circle'
-                            : 'heroicon-o-x-circle'
+                        ? 'heroicon-o-check-circle'
+                        : 'heroicon-o-x-circle'
                     )
                     ->color(
                         fn($state) => $state === 'paid'
-                            ? 'success'
-                            : 'danger'
+                        ? 'success'
+                        : 'danger'
                     ),
 
 
@@ -115,12 +120,15 @@ class BookingsTable
             ->defaultSort('created_at', 'desc')
 
             ->recordActions([
-                ViewAction::make()->icon('heroicon-o-eye'),
-                EditAction::make()->icon('heroicon-o-pencil'),
-                DeleteAction::make()->icon('heroicon-o-trash'),
+                ActionGroup::make([
+                    ViewAction::make()->icon('heroicon-o-eye'),
+                    EditAction::make()->icon('heroicon-o-pencil'),
+                    DeleteAction::make()->icon('heroicon-o-trash'),
+                ])
             ])
 
             ->striped()
             ->paginated([10, 25, 50]);
     }
-};
+}
+;

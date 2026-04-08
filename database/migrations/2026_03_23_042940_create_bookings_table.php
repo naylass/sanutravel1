@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,8 +15,10 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
             $table->string('booking_code')->nullable()->unique();
-            $table->timestamp('pickup_time')->nullable();
+            $table->date('pickup_date')->nullable();
+            $table->time('pickup_time')->nullable();
             $table->string('phone_number');
+            $table->unique(['phone_number', 'booking_code']);
             $table->string('pickup_location');
             $table->integer('total_passengers');
             $table->string('destination');
