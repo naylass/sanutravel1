@@ -17,6 +17,7 @@ class Booking extends Model
         'user_id',
         'service_id',
         'booking_code',
+        'pickup_date',
         'pickup_time',
         'phone_number',
         'pickup_location',

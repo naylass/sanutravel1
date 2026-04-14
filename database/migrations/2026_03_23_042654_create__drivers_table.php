@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -13,7 +12,7 @@ return new class extends Migration
     {
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
-            $table->string('photo');
+            $table->string('photo')->nullable();
             $table->string('name');
             $table->string('phone');
             $table->string('birth_place');
@@ -21,7 +20,7 @@ return new class extends Migration
             $table->enum('gender', ['male', 'female']);
             $table->text('address');
             $table->text('medical_history');
-            $table->string('license_number');
+            $table->string('license_number', 15);
             $table->enum('status', ['available', 'on_trip', 'inactive'])->default('available');
             $table->timestamps();
         });

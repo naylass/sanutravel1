@@ -14,7 +14,6 @@ use BackedEnum;
 use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class BookingResource extends Resource
@@ -22,7 +21,8 @@ class BookingResource extends Resource
     protected static ?string $model = Booking::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-archive-box';
-    protected static string | UnitEnum | null $navigationGroup = 'Operasional';
+    protected static ?string $pluralModelLabel = 'Pemesanan';
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
 
     protected static ?string $recordTitleAttribute = 'Booking';
 

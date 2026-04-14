@@ -3,9 +3,15 @@
 namespace App\Filament\Admin\Resources\Bookings\Schemas;
 
 use App\Models\Service;
+<<<<<<< HEAD
 use Filament\Forms\Components\DateTimePicker;
+=======
+use Filament\Forms\Components\DatePicker;
+>>>>>>> 0bbd2595d4dea88809cc5a9515982e5be0d7e99a
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -20,14 +26,20 @@ class BookingForm
                 TextInput::make('booking_code')
                     ->label('Kode Booking')
                     ->default(fn() => 'BOOK-' . strtoupper(Str::random(8)))
+                    ->readOnly()
                     ->unique()
+<<<<<<< HEAD
                     ->readOnly(),
+=======
+                    ->dehydrated(),
+>>>>>>> 0bbd2595d4dea88809cc5a9515982e5be0d7e99a
                 Select::make('user_id')
                     ->label('Nama')
                     ->relationship('user', 'name')
                     ->searchable()
                     ->preload()
                     ->required(),
+
                 Select::make('service_id')
                     ->label('Layanan')
                     ->options(Service::pluck('name', 'id'))
@@ -47,23 +59,34 @@ class BookingForm
                         $set('price', $price);
                     })
                     ->required(),
-                DateTimePicker::make('pickup_time')
-                    ->label('Waktu Penjemputan')
-                    ->placeholder('Pilih waktu penjemputan')
-                    ->dehydrated()
-                    ->disabled(function (Get $get) {
-                        $service = Service::find($get('service_id'));
 
-                        return blank($get('service_id'))
-                            || $service?->name === 'Reguler';
-                    })
-                    ->belowContent(function (Get $get) {
-                        $service = Service::find($get('service_id'));
+                Group::make()
+                    ->schema([
+                        DatePicker::make('pickup_date')
+                            ->label('Tanggal Penjemputan')
+                            ->placeholder('Pilih waktu penjemputan'),
 
-                        return $service?->name === 'Reguler'
-                            ? 'Layanan Reguler tidak bisa atur waktu penjemputan'
-                            : null;
-                    }),
+                        TimePicker::make('pickup_time')
+                            ->label('Waktu Penjemputan')
+                            ->placeholder('Pilih waktu penjemputan')
+                            ->dehydrated()
+                            ->disabled(function (Get $get) {
+                                $service = Service::find($get('service_id'));
+
+                                return blank($get('service_id'))
+                                    || $service?->name === 'Reguler';
+                            })
+                            ->belowContent(function (Get $get) {
+                                $service = Service::find($get('service_id'));
+
+                                return $service?->name === 'Reguler'
+                                    ? 'Layanan Reguler tidak bisa atur waktu penjemputan'
+                                    : null;
+                            }),
+
+                    ])
+                    ->columns(2),
+
                 TextInput::make('phone_number')
                     ->label('Nomor Telepon')
                     ->required(),
@@ -97,19 +120,6 @@ class BookingForm
                     ->readOnly()
                     ->prefix('Rp ')
                     ->numeric()
-                    ->required(),
-                Select::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'confirmed' => 'Confirmed',
-                        'cancelled' => 'Cancelled',
-                        'completed' => 'Completed',
-                    ])
-                    ->default('pending')
-                    ->required(),
-                Select::make('payment_status')
-                    ->options(['unpaid' => 'Unpaid', 'paid' => 'Paid'])
-                    ->default('unpaid')
                     ->required(),
             ]);
     }
