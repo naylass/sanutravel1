@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Resources\Bookings\Schemas;
 
 use App\Models\Service;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
@@ -22,8 +21,7 @@ class BookingForm
                     ->label('Kode Booking')
                     ->default(fn() => 'BOOK-' . strtoupper(Str::random(8)))
                     ->unique()
-                    ->dehydrated()
-                    ->disabled(),
+                    ->readOnly(),
                 Select::make('user_id')
                     ->label('Nama')
                     ->relationship('user', 'name')

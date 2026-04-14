@@ -52,7 +52,7 @@ class BookingsTable
                     ->icon('heroicon-o-map-pin')
                     ->formatStateUsing(
                         fn($record) =>
-                        $record->pickup_location . ' → ' . $record->destination
+                        $record->pickup_location . '  → ' . $record->destination
                     )
                     ->limit(35)
                     ->tooltip(
