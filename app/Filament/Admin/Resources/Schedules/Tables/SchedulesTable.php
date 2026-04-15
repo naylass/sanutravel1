@@ -32,34 +32,41 @@ class SchedulesTable
                     ->sortable(),
 
                 TextColumn::make('booking.user.name')
-                    ->label('Customer')
+                    ->label('Nama Pemesan')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('departure_date')
+                    ->label('Tanggal Keberangkatan')
                     ->date()
                     ->sortable(),
 
                 TextColumn::make('departure_time')
+                    ->label('Waktu Keberangkatan')
                     ->time()
                     ->sortable(),
 
                 TextColumn::make('pickup_point')
+                    ->label('Titik Penjemputan')
                     ->searchable(),
 
                 TextColumn::make('destination')
+                    ->label('Tujuan')
                     ->searchable(),
 
                 TextColumn::make('available_seats')
+                    ->label('Kursi Tersedia')
                     ->numeric()
                     ->sortable(),
 
                 TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('updated_at')
+                    ->label('Diperbarui Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

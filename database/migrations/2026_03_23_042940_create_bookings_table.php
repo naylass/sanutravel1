@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
             $table->string('booking_code')->nullable()->unique();
             $table->date('pickup_date')->nullable();
+            $table->enum('pickup_type', ['reguler', 'eksklusif']);
             $table->time('pickup_time')->nullable();
             $table->string('phone_number');
             $table->unique(['phone_number', 'booking_code']);

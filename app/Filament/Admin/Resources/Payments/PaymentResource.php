@@ -22,6 +22,7 @@ class PaymentResource extends Resource
     protected static ?string $model = Payment::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static ?string $pluralModelLabel = 'Pembayaran';
     protected static string | UnitEnum | null $navigationGroup = 'Keuangan';
     protected static ?string $recordTitleAttribute = 'Payment';
 

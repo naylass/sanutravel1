@@ -54,9 +54,11 @@ class DeliveryOrdersTable
                     ->icon(Heroicon::ClipboardDocument)
                     ->form([
                         Select::make('booking_id')
+                            ->label('Kode Booking')
                             ->relationship('booking', 'booking_code')
                             ->required(),
                         Select::make('driver_id')
+                            ->label('Sopir')
                             ->relationship('driver', 'name')
                             ->required(),
                     ]),

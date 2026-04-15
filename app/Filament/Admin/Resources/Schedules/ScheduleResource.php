@@ -22,6 +22,7 @@ class ScheduleResource extends Resource
     protected static ?string $model = Schedule::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
+    protected static ?string $pluralModelLabel = 'Jadwal Perjalanan';
     protected static string | UnitEnum | null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'Schedule';
 
