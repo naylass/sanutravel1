@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\Utilities\Get;
 
 class ScheduleForm
 {
@@ -41,7 +42,7 @@ class ScheduleForm
                     ->required(),
 
                 Select::make('booking_id')
-                    ->label('Booking')
+                    ->label('Kode Booking')
                     ->options(
                         Booking::with('user', 'service')
                             ->get()
@@ -52,47 +53,37 @@ class ScheduleForm
                     ->searchable()
                     ->required()
                     ->reactive()
-                    ->afterStateUpdated(function ($state, Set $set) {
+                    ->afterStateUpdated(function ($state, Set $set, Get $get) {
                         $booking = Booking::with('service')->find($state);
 
                         if ($booking) {
+                           
                             $set('pickup_point', $booking->pickup_location);
                             $set('destination', $booking->destination);
 
-                            $serviceType = $booking->service->type ?? 'regular';
-
-                            if ($serviceType === 'exclusive' && $booking->pickup_time) {
+                           
+                            if ($booking->pickup_time) {
                                 $set('departure_date', date('Y-m-d', strtotime($booking->pickup_time)));
-                                $set('departure_time', date('H:i:s', strtotime($booking->pickup_time)));
-                            } else {
-                                $set('departure_date', null);
-                                $set('departure_time', null);
+                                $set('departure_time', date('H:i', strtotime($booking->pickup_time)));
                             }
 
                             $currentSeats = $booking->total_passengers ?? 1;
-                            $set('available_seats', function ($get) use ($currentSeats) {
-                                return max(($get('available_seats') ?? 0) - $currentSeats, 0);
-                            });
+
+                            $availableSeats = $get('available_seats') ?? 0;
+
+                            $set('available_seats', max($availableSeats - $currentSeats, 0));
                         }
                     }),
 
                 DatePicker::make('departure_date')
                     ->label('Tanggal Berangkat')
-                    ->required(),
+                    ->required()
+                    ->reactive(),
 
                 TimePicker::make('departure_time')
                     ->label('Waktu Berangkat')
                     ->required()
-                    ->reactive()
-                    ->disabled(function ($get) {
-                        $bookingId = $get('booking_id');
-                        if (!$bookingId) return true;
-
-                        $booking = Booking::with('service')->find($bookingId);
-
-                        $serviceType = $booking->service->type ?? 'regular';
-                        return $serviceType === 'regular';
-                    }),
+                    ->reactive(),
 
                 TextInput::make('pickup_point')
                     ->label('Titik Penjemputan')

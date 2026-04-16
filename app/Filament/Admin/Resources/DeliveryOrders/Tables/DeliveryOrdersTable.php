@@ -17,22 +17,30 @@ class DeliveryOrdersTable
         return $table
             ->columns([
                 TextColumn::make('booking.booking_code')
-                    ->label('Booking')
+                    ->label('Kode Booking')
+                    ->searchable()
                     ->sortable(),
 
                 TextColumn::make('driver.name')
                     ->label('Sopir')
+                    ->searchable()
                     ->sortable(),
 
                 TextColumn::make('vehicle.brand')
                     ->label('Kendaraan')
+                    ->searchable()
                     ->sortable(),
 
-                TextColumn::make('schedule.departure_datetime')
+                TextColumn::make('schedule')
                     ->label('Waktu Keberangkatan')
-                    ->dateTime('d M Y H:i')
-                    ->sortable(),
+                    ->formatStateUsing(function ($record) {
+                        if (!$record->schedule) return '-';
 
+                        return \Carbon\Carbon::parse(
+                            $record->schedule->departure_date . ' ' . $record->schedule->departure_time
+                        )->format('d M Y H:i');
+                    })
+                    ->sortable(),
                 TextColumn::make('pickup_point')
                     ->label('Titik Penjemputan')
                     ->sortable(),
@@ -45,9 +53,7 @@ class DeliveryOrdersTable
                     ->label('Status')
                     ->sortable(),
             ])
-            ->filters([
-
-            ])
+            ->filters([])
             ->headerActions([
                 Action::make('generate')
                     ->label('Generate Delivery Order')
@@ -61,7 +67,7 @@ class DeliveryOrdersTable
                             ->label('Sopir')
                             ->relationship('driver', 'name')
                             ->required(),
-                    ]),
+                    ]), 
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -13,8 +13,11 @@ class DeliveryOrderForm
     {
         return $schema
             ->components([
-                TextInput::make('booking_id')
-                    ->label('Booking')
+                Select::make('booking_id')
+                    ->label('Kode Booking')
+                    ->relationship('booking', 'booking_code')
+                    ->searchable()
+                    ->preload()
                     ->required(),
 
                 Select::make('driver_id')
@@ -29,7 +32,12 @@ class DeliveryOrderForm
 
                 Select::make('schedule_id')
                     ->label('Waktu Keberangkatan')
-                    ->relationship('schedule', 'departure_datetime')
+                    ->relationship('schedule', 'id')
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) =>
+                        \Carbon\Carbon::parse($record->departure_date . ' ' . $record->departure_time)
+                            ->format('d M Y H:i')
+                    )
                     ->required(),
 
                 TextInput::make('pickup_point')
@@ -38,16 +46,6 @@ class DeliveryOrderForm
 
                 TextInput::make('destination')
                     ->label('Tujuan')
-                    ->required(),
-
-                Select::make('status')
-                    ->label('Status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'in_progress' => 'In Progress',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                    ])
                     ->required(),
             ]);
     }

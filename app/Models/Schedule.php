@@ -17,7 +17,8 @@ class Schedule extends Model
         'vehicle_id',
         'driver_id',
         'booking_id',
-        'departure_datetime',
+        'departure_date',
+        'departure_time',
         'pickup_point',
         'destination',
         'available_seats',
@@ -42,6 +43,11 @@ class Schedule extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function deliveryOrders()
+    {
+        return $this->hasOne(DeliveryOrder::class);
     }
 
     public function hasAvailableSeats(int $total): bool

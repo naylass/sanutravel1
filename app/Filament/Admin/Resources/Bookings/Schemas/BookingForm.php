@@ -20,7 +20,7 @@ class BookingForm
         return $schema
             ->components([
 
-                // Booking Code
+                
                 TextInput::make('booking_code')
                     ->label('Kode Booking')
                     ->default(fn() => 'BOOK-' . strtoupper(Str::random(8)))

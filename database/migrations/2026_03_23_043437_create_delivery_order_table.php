@@ -15,6 +15,9 @@ return new class extends Migration {
             $table->foreignId('booking_id')->constrained('bookings')->cascadeOnDelete();
             $table->foreignId('driver_id')->constrained()->cascadeOnDelete();
             $table->foreignId('schedule_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('vehicle_id')->constrained()->cascadeOnDelete();
+            $table->date('departure_date');
+            $table->time('departure_time');
             $table->string('pickup_point');
             $table->string('destination');
             $table->text('notes')->nullable();
