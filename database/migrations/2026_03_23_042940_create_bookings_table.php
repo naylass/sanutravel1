@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
+            $table->foreignId('schedule_id')->nullable()->constrained('schedules')->nullOnDelete();
             $table->string('booking_code')->unique();
             $table->date('pickup_date')->nullable();
             $table->enum('pickup_type', ['reguler', 'eksklusif']);
@@ -25,7 +26,6 @@ return new class extends Migration {
             $table->string('destination');
             $table->decimal('price', 12, 2);
             $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');
-            $table->enum('payment_status', ['unpaid', 'paid'])->default('unpaid');
             $table->timestamps();
         });
     }

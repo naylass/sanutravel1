@@ -9,38 +9,47 @@ class ScheduleInfolist
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextEntry::make('departure_datetime')
-                    ->label('Tanggal & Waktu Keberangkatan')
-                    ->dateTime('d M Y H:i'),
+        return $schema->components([
 
-                TextEntry::make('pickup_point')
-                    ->label('Titik Penjemputan'),
+            TextEntry::make('departure_date')
+                ->label('Waktu Keberangkatan')
+                ->formatStateUsing(function ($record) {
+                    return \Carbon\Carbon::parse($record->departure_date . ' ' . $record->departure_time)
+                        ->format('d M Y H:i');
+                }),
 
-                TextEntry::make('destination')
-                    ->label('Tujuan'),
+            TextEntry::make('pickup_point')
+                ->label('Titik Penjemputan'),
 
-                TextEntry::make('vehicle.brand')
-                    ->label('Kendaraan'),
+            TextEntry::make('destination')
+                ->label('Tujuan'),
 
-                TextEntry::make('driver.name')
-                    ->label('Sopir'),
+            TextEntry::make('vehicle.brand')
+                ->label('Kendaraan'),
 
-                TextEntry::make('service.name')
-                    ->label('Layanan'),
+            TextEntry::make('driver.name')
+                ->label('Sopir'),
 
-                TextEntry::make('available_seats')
-                    ->label('Kursi Tersedia')
-                    ->numeric(),
+            TextEntry::make('bookings')
+                ->label('Layanan')
+                ->formatStateUsing(function ($record) {
+                    return $record->bookings
+                        ->map(fn($b) => $b->service->name ?? '-')
+                        ->unique()
+                        ->join(', ');
+                }),
 
-                TextEntry::make('created_at')
-                    ->label('Dibuat Pada')
-                    ->dateTime(),
+            TextEntry::make('total_passengers')
+                ->label('Jumlah Customer')
+                ->formatStateUsing(fn($record) => $record->bookings->sum('total_passengers')),
 
-                TextEntry::make('updated_at')
-                    ->label('Diperbarui Pada')
-                    ->dateTime(),
-            ]);
+            TextEntry::make('created_at')
+                ->label('Dibuat Pada')
+                ->dateTime(),
+
+            TextEntry::make('updated_at')
+                ->label('Diperbarui Pada')
+                ->dateTime(),
+        ]);
     }
 }

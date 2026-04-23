@@ -13,11 +13,11 @@ class Vehicle extends Model
     use HasFactory;
 
     protected $fillable = [
+        'driver_id',
         'plate_number',
         'brand',
         'type',
         'capacity',
-        'status',
     ];
 
     public function schedules()
@@ -25,10 +25,14 @@ class Vehicle extends Model
         return $this->hasMany(Schedule::class);
     }
 
-
     public function deliveryOrders()
     {
         return $this->hasMany(DeliveryOrder::class);
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class);
     }
 
     public function isAvailable(): bool
@@ -40,5 +44,4 @@ class Vehicle extends Model
     {
         return $this->status === 'on_trip';
     }
-
 }

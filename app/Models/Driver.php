@@ -22,18 +22,17 @@ class Driver extends Model
         'address',
         'medical_history',
         'license_number',
-        'status',
     ];
 
     protected $attributes = [
         'status' => 'available',
     ];
-    
+
     protected $casts = [
         'birth_date' => 'date',
     ];
 
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -47,5 +46,10 @@ class Driver extends Model
     public function deliveryOrders()
     {
         return $this->hasMany(DeliveryOrder::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->hasOne(Vehicle::class);
     }
 }

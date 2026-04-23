@@ -2,6 +2,9 @@
 
 namespace App\Filament\Admin\Resources\DeliveryOrders\Tables;
 
+use App\Models\Booking;
+use App\Services\DeliveryOrderService;
+use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -41,9 +44,11 @@ class DeliveryOrdersTable
                         )->format('d M Y H:i');
                     })
                     ->sortable(),
-                TextColumn::make('pickup_point')
+
+                TextColumn::make('booking.schedule.pickup_point')
                     ->label('Titik Penjemputan')
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
 
                 TextColumn::make('destination')
                     ->label('Tujuan')
@@ -51,7 +56,32 @@ class DeliveryOrdersTable
 
                 TextColumn::make('status')
                     ->label('Status')
-                    ->sortable(),
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'ongoing' => 'warning',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                        'prepared' => 'info', // tambahkan ini
+                    })
+                    ->action(
+                        Action::make('change_status')
+                            ->label('Ubah Status')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('status')
+                                    ->options([
+                                        'ongoing' => 'ongoing',
+                                        'completed' => 'Completed',
+                                        'cancelled' => 'Cancelled',
+                                        'prepared' => 'Prepared',
+                                    ])
+                                    ->required()
+                            ])
+                            ->action(function ($record, $data) {
+                                $record->update([
+                                    'status' => $data['status']
+                                ]);
+                            })
+                    ),
             ])
             ->filters([])
             ->headerActions([
@@ -60,14 +90,34 @@ class DeliveryOrdersTable
                     ->icon(Heroicon::ClipboardDocument)
                     ->form([
                         Select::make('booking_id')
-                            ->label('Kode Booking')
-                            ->relationship('booking', 'booking_code')
+                            ->label('Booking')
+                            ->relationship(
+                                name: 'booking',
+                                titleAttribute: 'booking_code'
+                            )
+                            ->getOptionLabelFromRecordUsing(
+                                fn($record) =>
+                                $record->booking_code . ' - ' . ($record->user->name ?? '-')
+                            )
+                            ->searchable(['booking_code', 'user.name'])
+                            ->preload()
                             ->required(),
-                        Select::make('driver_id')
-                            ->label('Sopir')
-                            ->relationship('driver', 'name')
-                            ->required(),
-                    ]), 
+                    ])
+                    ->action(function (array $data) {
+                        try {
+                            app(DeliveryOrderService::class)->generate($data);
+
+                            Notification::make()
+                                ->title('Delivery Order berhasil dibuat')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

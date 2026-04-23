@@ -7,11 +7,13 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class BookingForm
 {
@@ -20,7 +22,7 @@ class BookingForm
         return $schema
             ->components([
 
-                
+                // 🔢 KODE BOOKING
                 TextInput::make('booking_code')
                     ->label('Kode Booking')
                     ->default(fn() => 'BOOK-' . strtoupper(Str::random(8)))
@@ -28,30 +30,35 @@ class BookingForm
                     ->unique()
                     ->dehydrated(),
 
-                // User
-                Select::make('user_id')
-                    ->label('Nama')
-                    ->relationship('user', 'name')
-                    ->searchable()
-                    ->preload()
+                // 👤 NAMA CUSTOMER (AUTO)
+                TextInput::make('user_name')
+                    ->label('Nama Customer')
+                    ->default(fn() => Auth::user()?->name)
+                    ->readOnly(),
+
+                // 🔒 USER ID (HIDDEN)
+                Hidden::make('user_id')
+                    ->default(fn() => Auth::id())
+                    ->dehydrated()
                     ->required(),
 
-                // Service
+                // 🚘 LAYANAN
                 Select::make('service_id')
                     ->label('Layanan')
                     ->relationship('service', 'name')
                     ->reactive()
                     ->afterStateUpdated(function ($state, Set $set, Get $get) {
+
                         $service = Service::find($state);
 
-                        // Set pickup_type otomatis
+                        // 🔥 SET TIPE
                         if ($service?->name === 'Reguler') {
                             $set('pickup_type', 'reguler');
                         } elseif ($service?->name === 'Eksklusif') {
                             $set('pickup_type', 'eksklusif');
                         }
 
-                        // Hitung harga
+                        // 🔥 HITUNG HARGA
                         $passengers = $get('total_passengers') ?? 1;
 
                         if ($service?->name === 'Reguler') {
@@ -66,7 +73,7 @@ class BookingForm
                     })
                     ->required(),
 
-                // Hidden pickup_type (auto dari service)
+                // 🔒 TIPE PICKUP
                 Select::make('pickup_type')
                     ->options([
                         'reguler' => 'Reguler',
@@ -76,13 +83,15 @@ class BookingForm
                     ->dehydrated()
                     ->required(),
 
-                // Pickup Section
+                // 📅 & ⏰
                 Group::make()
                     ->schema([
 
                         DatePicker::make('pickup_date')
                             ->label('Tanggal Penjemputan')
                             ->required(),
+
+                        // REGULER
                         Select::make('pickup_time')
                             ->label('Jam Reguler')
                             ->options([
@@ -96,6 +105,8 @@ class BookingForm
                             ])
                             ->visible(fn(Get $get) => $get('pickup_type') === 'reguler')
                             ->required(fn(Get $get) => $get('pickup_type') === 'reguler'),
+
+                        // EKSKLUSIF
                         TimePicker::make('pickup_time')
                             ->label('Jam Eksklusif')
                             ->seconds(false)
@@ -104,18 +115,25 @@ class BookingForm
 
                     ])
                     ->columns(2),
+
+                // 📞
                 TextInput::make('phone_number')
                     ->label('Nomor Telepon')
                     ->required(),
+
+                // 📍
                 TextInput::make('pickup_location')
                     ->label('Lokasi Penjemputan')
                     ->required(),
+
+                // 👥
                 TextInput::make('total_passengers')
                     ->label('Jumlah Penumpang')
                     ->numeric()
                     ->minValue(1)
                     ->reactive()
                     ->afterStateUpdated(function ($state, Set $set, Get $get) {
+
                         $service = Service::find($get('service_id'));
 
                         if ($service?->name === 'Reguler') {
@@ -129,9 +147,13 @@ class BookingForm
                         $set('price', $price);
                     })
                     ->required(),
+
+                // 🎯
                 TextInput::make('destination')
                     ->label('Lokasi Tujuan')
                     ->required(),
+
+                // 💰
                 TextInput::make('price')
                     ->label('Harga')
                     ->readOnly()

@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Booking;
 use App\Models\Driver;
 use App\Models\Notification;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * Kolom yang boleh diisi mass assignment
@@ -27,25 +28,25 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    
+
     public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
- 
+
 
     public function driver()
     {
         return $this->hasOne(Driver::class);
     }
 
-    
+
     public function notifications()
     {
         return $this->hasMany(Notification::class);
     }
 
-  
+
 
     public function isAdmin(): bool
     {

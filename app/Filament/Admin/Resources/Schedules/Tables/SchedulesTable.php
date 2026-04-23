@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Schedules\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
@@ -26,15 +27,15 @@ class SchedulesTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('booking.booking_code')
+                TextColumn::make('bookings.booking_code')
                     ->label('Kode Booking')
-                    ->searchable()
-                    ->sortable(),
+                    ->badge()
+                    ->separator(', '),
 
-                TextColumn::make('booking.user.name')
+                TextColumn::make('bookings.user.name')
                     ->label('Nama Pemesan')
-                    ->searchable()
-                    ->sortable(),
+                    ->badge()
+                    ->separator(', '),
 
                 TextColumn::make('departure_date')
                     ->label('Tanggal Keberangkatan')
@@ -75,9 +76,11 @@ class SchedulesTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

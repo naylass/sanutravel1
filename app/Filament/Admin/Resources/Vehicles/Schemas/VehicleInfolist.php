@@ -11,15 +11,28 @@ class VehicleInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('plate_number'),
-                TextEntry::make('brand'),
-                TextEntry::make('type'),
+                TextEntry::make('driver.name')
+                    ->label('Sopir'),
+
+                TextEntry::make('plate_number')
+                    ->label('Nomor Polisi'),
+
+                TextEntry::make('brand')
+                    ->label('Merk'),
+
+                TextEntry::make('type')
+                    ->label('Tipe'),
+
                 TextEntry::make('capacity')
+                    ->label('Kapasitas')
                     ->numeric(),
-                TextEntry::make('status'),
+
                 TextEntry::make('created_at')
+                    ->label('Dibuat')
                     ->dateTime(),
+
                 TextEntry::make('updated_at')
+                    ->label('Diupdate')
                     ->dateTime(),
             ]);
     }

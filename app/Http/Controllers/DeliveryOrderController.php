@@ -2,64 +2,64 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DeliveryOrder;
 use Illuminate\Http\Request;
+use App\Models\DeliveryOrder;
+use App\Models\Schedule;
 
 class DeliveryOrderController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    // 1. BUAT DO DARI SCHEDULE (ADMIN)
+    public function store($schedule_id)
     {
-        //
+        $schedule = Schedule::findOrFail($schedule_id);
+
+        $do = DeliveryOrder::create([
+            'schedule_id' => $schedule->id,
+            'driver_id' => $schedule->driver_id,
+            'status' => 'waiting',
+        ]);
+
+        return response()->json([
+            'message' => 'Delivery Order dibuat',
+            'data' => $do
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    // 2. DRIVER LIHAT DO
+    public function myOrders()
     {
-        //
+        $do = DeliveryOrder::where('driver_id', auth()->id)
+                ->with('schedule')
+                ->get();
+
+        return response()->json($do);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    // 3. DRIVER MULAI PERJALANAN
+    public function startTrip($id)
     {
-        //
+        $do = DeliveryOrder::findOrFail($id);
+
+        $do->update([
+            'status' => 'on_trip'
+        ]);
+
+        return response()->json([
+            'message' => 'Perjalanan dimulai'
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(DeliveryOrder $deliveryOrder)
+    // 4. DRIVER SELESAI
+    public function finishTrip($id)
     {
-        //
-    }
+        $do = DeliveryOrder::findOrFail($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(DeliveryOrder $deliveryOrder)
-    {
-        //
-    }
+        $do->update([
+            'status' => 'done'
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, DeliveryOrder $deliveryOrder)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(DeliveryOrder $deliveryOrder)
-    {
-        //
+        return response()->json([
+            'message' => 'Perjalanan selesai'
+        ]);
     }
 }

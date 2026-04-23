@@ -20,7 +20,6 @@ return new class extends Migration {
             $table->time('departure_time');
             $table->string('pickup_point');
             $table->string('destination');
-            $table->text('notes')->nullable();
             $table->enum('status', ['prepared', 'ongoing', 'completed', 'cancelled'])->default('prepared');
             $table->timestamps();
         });

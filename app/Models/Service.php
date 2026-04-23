@@ -16,12 +16,10 @@ class Service extends Model
         'description',
     ];
 
-    
-    public function schedules()
+    public function bookings()
     {
-        return $this->hasMany(Schedule::class);
+        return $this->hasMany(Booking::class);
     }
-
 
     public function isReguler(): bool
     {

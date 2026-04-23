@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Vehicles\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
@@ -16,6 +17,11 @@ class VehiclesTable
     {
         return $table
             ->columns([
+                TextColumn::make('driver.name')
+                    ->label('Sopir')
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('plate_number')
                     ->label('Nomor Polisi')
                     ->searchable(),
@@ -35,7 +41,12 @@ class VehiclesTable
 
                 TextColumn::make('status')
                     ->label('Status Kendaraan')
-                    ->formatStateUsing(fn ($state) => match($state) {
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'available' => 'success',
+                        'on_trip' => 'warning',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'available' => 'Available',
                         'on_trip' => 'On Trip',
                         default => 'Unknown',
@@ -58,9 +69,11 @@ class VehiclesTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

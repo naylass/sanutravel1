@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
+use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Payment;
 use App\Models\DeliveryOrder;
@@ -16,6 +17,7 @@ class Booking extends Model
     protected $fillable = [
         'user_id',
         'service_id',
+        'schedule_id', 
         'booking_code',
         'pickup_date',
         'pickup_type',
@@ -26,12 +28,16 @@ class Booking extends Model
         'destination',
         'price',
         'status',
-        'payment_status',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function schedule()
+    {
+        return $this->belongsTo(Schedule::class);
     }
 
     public function payment()

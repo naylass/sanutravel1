@@ -17,7 +17,7 @@ return new class extends Migration
             $table->decimal('amount', 12, 2);
             $table->enum('income_type', ['booking', 'other']);
             $table->text('description')->nullable();
-            $table->date('date');
+            $table->date('income_date')->default(now());
             $table->timestamps();
         });
     }
