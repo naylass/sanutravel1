@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
 
-        DB::table('users')->insert([
+        $users = [
             [
                 'name' => 'Superadmin',
                 'email' => 'superadmin@gmail.com',
@@ -53,6 +53,21 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('nazwa123'),
                 'role' => 'customer',
             ],
-        ]);
+        ];
+
+        foreach ($users as $data) {
+            $users = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name' => $data['name'],
+                    'password' => $data['password'],
+                ],
+            );
+
+            if (!$users->hasRole($data['role'])) {
+
+                $users->assignRole($data['role']);
+            }
+        }
     }
 }
