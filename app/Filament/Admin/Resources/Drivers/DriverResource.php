@@ -23,7 +23,7 @@ class DriverResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
     protected static ?string $pluralModelLabel = 'Sopir';
-    protected static string | UnitEnum | null $navigationGroup = 'Operasional';
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'Driver';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,12 @@ class DriverResource extends Resource
             'view' => ViewDriver::route('/{record}'),
             'edit' => EditDriver::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+        ]);
     }
 }

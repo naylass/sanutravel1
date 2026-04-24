@@ -33,11 +33,18 @@ class RolePermissionSeeder extends Seeder
             'manage.services',
             'manage.vehicles',
             'manage.schedules',
+
             'manage.bookings',
+            'edit.bookings',
+            'delete.bookings',
+            'cancel.booking',
+
             'manage.deliveryorders',
             'manage.payments',
             'manage.incomes',
             'manage.notifications',
+
+
 
         ];
 

@@ -23,7 +23,7 @@ class DeliveryOrderResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-chart-bar';
     protected static ?string $pluralModelLabel = 'Surat Jalan';
-    protected static string |UnitEnum| null $navigationGroup = 'Operasional';
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'DeliveryOrder';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,13 @@ class DeliveryOrderResource extends Resource
             'view' => ViewDeliveryOrder::route('/{record}'),
             'edit' => EditDeliveryOrder::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'driver',
+        ]);
     }
 }

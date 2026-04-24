@@ -23,7 +23,7 @@ class VehicleResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-truck';
     protected static ?string $pluralModelLabel = 'Kendaraan';
-    protected static string | UnitEnum | null $navigationGroup = 'Operasional';
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'Vehicle';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,12 @@ class VehicleResource extends Resource
             'view' => ViewVehicle::route('/{record}'),
             'edit' => EditVehicle::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+        ]);
     }
 }

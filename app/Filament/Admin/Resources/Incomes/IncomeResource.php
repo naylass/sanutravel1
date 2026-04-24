@@ -23,7 +23,7 @@ class IncomeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-wallet';
     protected static ?string $pluralModelLabel = 'Pemasukan';
-    protected static string | UnitEnum | null $navigationGroup = 'Keuangan';
+    protected static string|UnitEnum|null $navigationGroup = 'Keuangan';
     protected static ?string $recordTitleAttribute = 'Income';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,12 @@ class IncomeResource extends Resource
             'view' => ViewIncome::route('/{record}'),
             'edit' => EditIncome::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+        ]);
     }
 }

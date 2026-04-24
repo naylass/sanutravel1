@@ -23,7 +23,7 @@ class UserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user-circle';
     protected static ?string $pluralModelLabel = 'Pengguna';
-    protected static string | UnitEnum | null $navigationGroup = 'Manajemen Pengguna';
+    protected static string|UnitEnum|null $navigationGroup = 'Manajemen Pengguna';
     protected static ?string $recordTitleAttribute = 'User';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,12 @@ class UserResource extends Resource
             'view' => ViewUser::route('/{record}'),
             'edit' => EditUser::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+        ]);
     }
 }

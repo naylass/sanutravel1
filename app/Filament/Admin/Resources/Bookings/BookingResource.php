@@ -57,4 +57,19 @@ class BookingResource extends Resource
             'edit' => EditBooking::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'customer',
+        ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'customer'
+        ]);
+    }
 }

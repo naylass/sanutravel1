@@ -23,7 +23,7 @@ class ScheduleResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
     protected static ?string $pluralModelLabel = 'Jadwal Perjalanan';
-    protected static string | UnitEnum | null $navigationGroup = 'Operasional';
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'Schedule';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,12 @@ class ScheduleResource extends Resource
             'view' => ViewSchedule::route('/{record}'),
             'edit' => EditSchedule::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+        ]);
     }
 }

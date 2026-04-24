@@ -23,7 +23,7 @@ class ServiceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cog';
     protected static ?string $pluralModelLabel = 'Layanan';
-    protected static string | UnitEnum | null $navigationGroup = 'Operasional';
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'Service';
 
     public static function form(Schema $schema): Schema
@@ -56,5 +56,12 @@ class ServiceResource extends Resource
             'view' => ViewService::route('/{record}'),
             'edit' => EditService::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+        ]);
     }
 }
