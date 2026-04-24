@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 
@@ -16,35 +17,62 @@ class IncomesTable
     {
         return $table
             ->columns([
-                TextColumn::make('payment_id')
-                    ->searchable(),
+
+                // 🎫 BOOKING CODE (via payment)
+                TextColumn::make('payment.booking.booking_code')
+                    ->label('Kode Booking')
+                    ->searchable()
+                    ->sortable(),
+
+                // 💰 AMOUNT
                 TextColumn::make('amount')
-                    ->numeric()
-                    ->searchable(),
+                    ->label('Jumlah')
+                    ->money('IDR')
+                    ->sortable(),
+
+                // 📊 TYPE INCOME
                 TextColumn::make('income_type')
-                    ->searchable(),
-                TextColumn::make('description') 
-                    ->searchable(),
-                TextColumn::make('date')
+                    ->label('Tipe')
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'booking' => 'success',
+                        'other' => 'warning',
+                        default => 'gray',
+                    }),
+
+                // 📝 DESCRIPTION
+                TextColumn::make('description')
+                    ->label('Deskripsi')
+                    ->limit(30)
+                    ->placeholder('-'),
+
+                // 📅 INCOME DATE (FIXED)
+                TextColumn::make('income_date')
+                    ->label('Tanggal')
                     ->date()
-                    ->searchable(),
+                    ->sortable(),
+
+                // 📅 CREATED AT
                 TextColumn::make('created_at')
+                    ->label('Dibuat')
                     ->dateTime()
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                // 📅 UPDATED AT
                 TextColumn::make('updated_at')
+                    ->label('Update')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),   
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                ActionGroup::make([
+                    ViewAction::make()->icon('heroicon-o-eye'),
+                    EditAction::make()->icon('heroicon-o-pencil'),
+                    DeleteAction::make()->icon('heroicon-o-trash'),
+                ])
             ])
+
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

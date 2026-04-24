@@ -13,9 +13,8 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // reguler / eksklusif
+            $table->string('name'); 
             $table->decimal('price', 12, 2);
-            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

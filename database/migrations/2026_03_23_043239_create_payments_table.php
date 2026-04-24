@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('booking_id')->constrained()->cascadeOnDelete();
             $table->enum('payment_method', ['transfer', 'cash', 'ewallet']);
-            $table->dateTime('payment_date');
+            $table->dateTime('payment_date')->nullable();
             $table->decimal('amount', 12, 2);
-            $table->string('account_number')->nullable();
+            $table->text('transfer_info')->nullable();
             $table->string('proof_image')->nullable();
             $table->enum('status', ['waiting', 'verified', 'rejected'])->default('waiting');
             $table->timestamps();

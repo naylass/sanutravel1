@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Schedules\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
@@ -26,40 +27,47 @@ class SchedulesTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('booking.booking_code')
+                TextColumn::make('bookings.booking_code')
                     ->label('Kode Booking')
-                    ->searchable()
-                    ->sortable(),
+                    ->badge()
+                    ->separator(', '),
 
-                TextColumn::make('booking.user.name')
-                    ->label('Customer')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('bookings.user.name')
+                    ->label('Nama Pemesan')
+                    ->badge()
+                    ->separator(', '),
 
                 TextColumn::make('departure_date')
+                    ->label('Tanggal Keberangkatan')
                     ->date()
                     ->sortable(),
 
                 TextColumn::make('departure_time')
+                    ->label('Waktu Keberangkatan')
                     ->time()
                     ->sortable(),
 
                 TextColumn::make('pickup_point')
+                    ->label('Titik Penjemputan')
                     ->searchable(),
 
                 TextColumn::make('destination')
+                    ->label('Tujuan')
                     ->searchable(),
 
                 TextColumn::make('available_seats')
+                    ->label('Kursi Tersedia')
                     ->numeric()
                     ->sortable(),
 
                 TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('updated_at')
+                    ->label('Diperbarui Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -68,9 +76,11 @@ class SchedulesTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

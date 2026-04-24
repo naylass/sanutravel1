@@ -38,12 +38,6 @@ class BookingInfolist
                     ->label('Harga')
                     ->numeric(),
 
-                TextEntry::make('status')
-                    ->label('Status'),
-
-                TextEntry::make('payment_status')
-                    ->label('Status Pembayaran'),
-
                 TextEntry::make('created_at')
                     ->dateTime(),
 

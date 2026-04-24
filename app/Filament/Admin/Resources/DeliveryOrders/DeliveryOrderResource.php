@@ -22,6 +22,7 @@ class DeliveryOrderResource extends Resource
     protected static ?string $model = DeliveryOrder::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-chart-bar';
+    protected static ?string $pluralModelLabel = 'Surat Jalan';
     protected static string |UnitEnum| null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'DeliveryOrder';
 

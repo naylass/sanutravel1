@@ -32,6 +32,12 @@ class RolePermissionSeeder extends Seeder
             'manage.drivers',
             'manage.services',
             'manage.vehicles',
+            'manage.schedules',
+            'manage.bookings',
+            'manage.deliveryorders',
+            'manage.payments',
+            'manage.incomes',
+            'manage.notifications',
 
         ];
 
@@ -45,19 +51,27 @@ class RolePermissionSeeder extends Seeder
 
         Role::findByName('admin')
             ->givePermissionTo([
+                'manage.users',
                 'manage.drivers',
                 'manage.services',
                 'manage.vehicles',
+                'manage.schedules',
+                'manage.bookings',
+                'manage.deliveryorders',
+                'manage.payments',
+                'manage.incomes',
+                'manage.notifications',
             ]);
 
         Role::findByName('driver')
             ->givePermissionTo([
-                '',
+                'manage.deliveryorders',
             ]);
 
         Role::findByName('customer')
             ->givePermissionTo([
-                ''
+                'manage.bookings',
+                'manage.payments',
             ]);
     }
 }

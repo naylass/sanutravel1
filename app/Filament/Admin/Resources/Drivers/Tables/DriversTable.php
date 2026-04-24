@@ -69,15 +69,6 @@ class DriversTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('status')
-                    ->label('Status Driver')
-                    ->options([
-                        'available' => 'Available',
-                        'on_trip' => 'On Trip',
-                        'inactive' => 'Inactive',
-                    ])
-                    ->default('available')  
-                    ->searchable(),
             ])
             ->recordActions([
                 ViewAction::make(),

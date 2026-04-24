@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Booking;
-use App\Models\Payment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -15,22 +13,17 @@ class Income extends Model
         'payment_id',
         'amount',
         'income_type',
+        'income_date',
         'description',
-        'date',
     ];
 
-   
-    public function booking()
-    {
-        return $this->belongsTo(Booking::class);
-    }
-
-   
+    // 🔗 RELASI KE PAYMENT
     public function payment()
     {
         return $this->belongsTo(Payment::class);
     }
 
+    // 📊 CHECK TYPE
     public function isBookingIncome(): bool
     {
         return $this->income_type === 'booking';

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('driver_id')->unique() ->constrained()->cascadeOnDelete();
             $table->string('plate_number')->unique();
             $table->string('brand');
             $table->string('type');
             $table->integer('capacity');
-            $table->enum('status', ['available', 'on_trip'])->default('available');
             $table->timestamps();
         });
     }

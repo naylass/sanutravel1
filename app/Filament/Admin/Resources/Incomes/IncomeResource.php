@@ -22,6 +22,7 @@ class IncomeResource extends Resource
     protected static ?string $model = Income::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-wallet';
+    protected static ?string $pluralModelLabel = 'Pemasukan';
     protected static string | UnitEnum | null $navigationGroup = 'Keuangan';
     protected static ?string $recordTitleAttribute = 'Income';
 

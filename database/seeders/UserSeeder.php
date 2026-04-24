@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
             ],
             [
                 'name' => 'Admin',
-                'email' => 'naysaj@gmail.com',
+                'email' => 'nylaadjah@gmail.com',
                 'password' => Hash::make('admin123'),
                 'role' => 'admin',
             ],
@@ -43,13 +43,13 @@ class UserSeeder extends Seeder
             ],
             [
                 'name' => 'Anjeng',
-                'email' => 'anjeng@gmail.com',
+                'email' => 'naylajk101@gmail.com',
                 'password' => Hash::make('anjeng123'),
                 'role' => 'customer',
             ],
             [
                 'name' => 'Nazwa',
-                'email' => 'nazwa@gmail.com',
+                'email' => 'nylsjdh18@gmail.com',
                 'password' => Hash::make('nazwa123'),
                 'role' => 'customer',
             ],

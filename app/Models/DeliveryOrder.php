@@ -17,12 +17,12 @@ class DeliveryOrder extends Model
         'driver_id',
         'vehicle_id',
         'schedule_id',
-        'departure_datetime',
+        'departure_date',
+        'departure_time',
         'pickup_point',
         'destination',
         'status',
     ];
-
 
     public function booking()
     {
@@ -39,7 +39,6 @@ class DeliveryOrder extends Model
         return $this->belongsTo(Vehicle::class);
     }
 
-    
     public function schedule()
     {
         return $this->belongsTo(Schedule::class);

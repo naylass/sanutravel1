@@ -21,7 +21,6 @@ return new class extends Migration {
             $table->text('address');
             $table->text('medical_history');
             $table->string('license_number', 15);
-            $table->enum('status', ['available', 'on_trip', 'inactive'])->default('available');
             $table->timestamps();
         });
     }

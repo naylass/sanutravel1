@@ -12,27 +12,21 @@ class Schedule extends Model
 {
     use HasFactory;
 
-    
+
     protected $fillable = [
         'vehicle_id',
         'driver_id',
-        'booking_id',
-        'departure_datetime',
+        'departure_date',
+        'departure_time',
         'pickup_point',
         'destination',
         'available_seats',
     ];
 
-    public function booking()
-    {
-        return $this->belongsTo(Booking::class);
-    }
-  
     public function driver()
     {
         return $this->belongsTo(Driver::class);
     }
-
 
     public function vehicle()
     {
@@ -44,9 +38,19 @@ class Schedule extends Model
         return $this->hasMany(Booking::class);
     }
 
-    public function hasAvailableSeats(int $total): bool
+    public function deliveryOrders()
     {
-        return $this->available_seats >= $total;
+        return $this->hasOne(DeliveryOrder::class);
     }
 
+    public function remainingSeats(): int
+    {
+        $used = $this->bookings()->sum('total_passengers');
+        return $this->vehicle->capacity - $used;
+    }
+
+    public function isFull(): bool
+    {
+        return $this->remainingSeats() <= 0;
+    }
 }

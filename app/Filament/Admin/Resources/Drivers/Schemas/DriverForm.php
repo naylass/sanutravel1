@@ -55,16 +55,6 @@ class DriverForm
                 TextInput::make('license_number')
                     ->label('Nomor SIM')
                     ->required(),
-
-                Select::make('status')
-                    ->label('Status Driver')
-                    ->options([
-                        'available' => 'Available',
-                        'on_trip' => 'On Trip',
-                        'inactive' => 'Inactive',
-                    ])
-                    ->default('available')
-                    ->required(),
             ]);
     }
 }

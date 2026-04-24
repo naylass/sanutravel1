@@ -22,6 +22,7 @@ class DriverResource extends Resource
     protected static ?string $model = Driver::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
+    protected static ?string $pluralModelLabel = 'Sopir';
     protected static string | UnitEnum | null $navigationGroup = 'Operasional';
     protected static ?string $recordTitleAttribute = 'Driver';
 

@@ -12,6 +12,13 @@ class VehicleForm
     {
         return $schema
             ->components([
+                Select::make('driver_id')
+                    ->label('Sopir')
+                    ->relationship('driver', 'name') 
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+                    
                 TextInput::make('plate_number')
                     ->label('Nomor Polisi')
                     ->required(),
@@ -29,15 +36,6 @@ class VehicleForm
                     ->required()
                     ->numeric()
                     ->minValue(1),
-
-                Select::make('status')
-                    ->label('Status Kendaraan')
-                    ->options([
-                        'available' => 'Available',
-                        'on_trip' => 'On trip',
-                    ])
-                    ->default('available')
-                    ->required(),
             ]);
     }
 }
