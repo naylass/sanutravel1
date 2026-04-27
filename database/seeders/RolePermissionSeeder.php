@@ -29,10 +29,27 @@ class RolePermissionSeeder extends Seeder
         //kode ini buat nambah permission
         $permissions = [
             'manage.users',
+            'create.users',
+            'edit.users',
+
             'manage.drivers',
+            'create.drivers',
+            'edit.drivers',
+            'delete.drivers',
+
             'manage.services',
+            'edit.services',
+
             'manage.vehicles',
+            'create.vehicles',
+            'edit.vehicles',
+            'delete.vehicles',
+
             'manage.schedules',
+            'create.schedules',
+            'edit.schedules',
+            'delete.schedules',
+            'cancel.schedule',
 
             'manage.bookings',
             'edit.bookings',
@@ -40,12 +57,16 @@ class RolePermissionSeeder extends Seeder
             'cancel.booking',
 
             'manage.deliveryorders',
+            'create.deliveryorders',
+
             'manage.payments',
+            'create.payments',
+            'edit.payments',
+
             'manage.incomes',
-            'manage.notifications',
-
-
-
+            'create.incomes',
+            'edit.incomes',
+            'delete.incomes',
         ];
 
         foreach ($permissions as $permission) {
@@ -67,7 +88,6 @@ class RolePermissionSeeder extends Seeder
                 'manage.deliveryorders',
                 'manage.payments',
                 'manage.incomes',
-                'manage.notifications',
             ]);
 
         Role::findByName('driver')

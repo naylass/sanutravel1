@@ -85,21 +85,6 @@ class BookingsTable
                     ->icon('heroicon-o-clock')
                     ->placeholder('-'),
 
-                TextColumn::make('payment_status')
-                    ->label('Bayar')
-                    ->badge()
-                    ->icon(
-                        fn($state) => $state === 'paid'
-                        ? 'heroicon-o-check-circle'
-                        : 'heroicon-o-x-circle'
-                    )
-                    ->color(
-                        fn($state) => $state === 'paid'
-                        ? 'success'
-                        : 'danger'
-                    ),
-
-
                 TextColumn::make('status')
                     ->badge()
                     ->icon(fn($state) => match ($state) {

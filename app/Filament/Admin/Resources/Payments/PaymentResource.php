@@ -16,6 +16,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentResource extends Resource
 {
@@ -56,5 +58,38 @@ class PaymentResource extends Resource
             'view' => ViewPayment::route('/{record}'),
             'edit' => EditPayment::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // kalau bukan admin → hanya lihat pembayaran sendiri
+        if (!Auth::user()->hasRole('admin')) {
+            $query->where('user_id', Auth::id());
+        }
+
+        return $query;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->hasAnyRole([
+            'admin',
+            'customer',
+        ]);
+    }
+
+    public static function canView($record): bool
+    {
+        return Auth::user()->hasRole('admin') ||
+            $record->user_id === Auth::id();
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->hasAnyRole([
+            'customer'
+        ]);
     }
 }

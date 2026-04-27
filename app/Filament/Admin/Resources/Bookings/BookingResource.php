@@ -15,6 +15,8 @@ use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class BookingResource extends Resource
 {
@@ -58,17 +60,35 @@ class BookingResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // 🔒 kalau bukan admin → hanya lihat booking sendiri
+        if (!Auth::user()->hasRole('admin')) {
+            $query->where('user_id', Auth::id());
+        }
+
+        return $query;
+    }
+
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole([
+        return Auth::user()->hasAnyRole([
             'admin',
             'customer',
         ]);
     }
 
+    public static function canView($record): bool
+    {
+        return Auth::user()->hasRole('admin') ||
+            $record->user_id === Auth::id();
+    }
+
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole([
+        return Auth::user()->hasAnyRole([
             'customer'
         ]);
     }

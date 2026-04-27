@@ -46,16 +46,6 @@ class DriversTable
                     ->label('Nomor SIM')
                     ->searchable(),
 
-                TextColumn::make('status')
-                    ->label('Status Driver')
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'available' => 'Available',
-                        'on_trip' => 'On Trip',
-                        'inactive' => 'Inactive',
-                        default => 'Unknown',
-                    })
-                    ->sortable(),
-
                 TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime()
