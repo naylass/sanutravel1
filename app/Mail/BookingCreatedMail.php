@@ -10,9 +10,9 @@ class BookingCreatedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $booking;
+    public mixed $booking;
 
-    public function __construct($booking)
+    public function __construct(mixed $booking)
     {
         $this->booking = $booking;
     }

@@ -25,7 +25,7 @@ return new class extends Migration {
             $table->integer('total_passengers');
             $table->string('destination');
             $table->decimal('price', 12, 2);
-            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');
+            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'cancel_request'])->default('pending');
             $table->timestamps();
         });
     }

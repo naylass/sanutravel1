@@ -58,7 +58,6 @@ class IncomesTable
                     ->dateTime()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                // 📅 UPDATED AT
                 TextColumn::make('updated_at')
                     ->label('Update')
                     ->dateTime()

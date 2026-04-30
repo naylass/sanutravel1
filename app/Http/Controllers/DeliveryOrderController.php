@@ -2,64 +2,44 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\DeliveryOrder;
-use App\Models\Schedule;
+use Illuminate\Http\Request;
 
 class DeliveryOrderController extends Controller
 {
-    // 1. BUAT DO DARI SCHEDULE (ADMIN)
-    public function store($schedule_id)
-    {
-        $schedule = Schedule::findOrFail($schedule_id);
-
-        $do = DeliveryOrder::create([
-            'schedule_id' => $schedule->id,
-            'driver_id' => $schedule->driver_id,
-            'status' => 'waiting',
-        ]);
-
-        return response()->json([
-            'message' => 'Delivery Order dibuat',
-            'data' => $do
-        ]);
-    }
-
-    // 2. DRIVER LIHAT DO
+    // DRIVER LIHAT ORDER
     public function myOrders()
     {
-        $do = DeliveryOrder::where('driver_id', auth()->id)
-                ->with('schedule')
-                ->get();
+        $driver = auth()->user()->driver;
 
-        return response()->json($do);
+        $orders = DeliveryOrder::where('driver_id', $driver->id)
+            ->with(['booking', 'schedule'])
+            ->get();
+
+        return response()->json($orders);
     }
 
-    // 3. DRIVER MULAI PERJALANAN
+    // START
     public function startTrip($id)
     {
-        $do = DeliveryOrder::findOrFail($id);
+        $order = DeliveryOrder::findOrFail($id);
 
-        $do->update([
-            'status' => 'on_trip'
+        $order->update([
+            'status' => 'ongoing'
         ]);
 
-        return response()->json([
-            'message' => 'Perjalanan dimulai'
-        ]);
+        return response()->json(['message' => 'Perjalanan dimulai']);
     }
 
-    // 4. DRIVER SELESAI
+    // FINISH
     public function finishTrip($id)
     {
-        $do = DeliveryOrder::findOrFail($id);
+        $order = DeliveryOrder::findOrFail($id);
 
-        $do->update([
-            'status' => 'done'
+        $order->update([
+            'status' => 'completed'
         ]);
 
-        return response()->json([
-            'message' => 'Perjalanan selesai'
-        ]);
+        return response()->json(['message' => 'Perjalanan selesai']);
     }
 }

@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
             ],
             [
                 'name' => 'Syahnuri',
-                'email' => 'Syahnuri@gmail.com',
+                'email' => 'nylasjdh@gmail.com',
                 'password' => Hash::make('admin123'),
                 'role' => 'driver',
             ],

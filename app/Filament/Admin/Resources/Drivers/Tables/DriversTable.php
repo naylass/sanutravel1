@@ -10,7 +10,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
 
 class DriversTable
 {
@@ -30,6 +29,10 @@ class DriversTable
                     ->label('Nomor Telepon')
                     ->searchable(),
 
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable(),
+
                 TextColumn::make('birth_place')
                     ->label('Tempat Lahir')
                     ->searchable(),
@@ -45,7 +48,7 @@ class DriversTable
                 TextColumn::make('license_number')
                     ->label('Nomor SIM')
                     ->searchable(),
-
+                
                 TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime()
@@ -58,8 +61,7 @@ class DriversTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-            ])
+            ->filters([])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),

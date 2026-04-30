@@ -25,7 +25,7 @@ class DriverSeeder extends Seeder
                 'license_number' => '123456789012345',
             ],
             [
-                'name' => 'Yanto',
+                'name' => 'Syahnuri',
                 'phone' => '089011220091',
                 'birth_place' => 'Cilegon',
                 'birth_date' => '1998-03-20',

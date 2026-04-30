@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources\DeliveryOrders\Tables;
 
-use App\Models\Booking;
 use App\Services\DeliveryOrderService;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
@@ -12,6 +11,9 @@ use Filament\Forms\Components\Select;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\DeliveryStatusUpdatedMail;
+use App\Mail\DeliveryOrderCreatedMail;
 
 class DeliveryOrdersTable
 {
@@ -19,71 +21,74 @@ class DeliveryOrdersTable
     {
         return $table
             ->columns([
+
                 TextColumn::make('booking.booking_code')
                     ->label('Kode Booking')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('driver.name')
-                    ->label('Sopir')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('vehicle.brand')
-                    ->label('Kendaraan')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('schedule')
-                    ->label('Waktu Keberangkatan')
-                    ->formatStateUsing(function ($record) {
-                        if (!$record->schedule) return '-';
-
-                        return \Carbon\Carbon::parse(
-                            $record->schedule->departure_date . ' ' . $record->schedule->departure_time
-                        )->format('d M Y H:i');
-                    })
-                    ->sortable(),
-
-                TextColumn::make('booking.schedule.pickup_point')
-                    ->label('Titik Penjemputan')
-                    ->sortable()
                     ->searchable(),
 
+                TextColumn::make('driver.name')
+                    ->label('Driver'),
+
+                TextColumn::make('vehicle.brand')
+                    ->label('Kendaraan'),
+
+                TextColumn::make('schedule.departure_date')
+                    ->label('Tanggal'),
+
+                TextColumn::make('schedule.departure_time')
+                    ->label('Jam'),
+
+                TextColumn::make('schedule.pickup_point')
+                    ->label('Pickup Point'),
+
                 TextColumn::make('destination')
-                    ->label('Tujuan')
-                    ->sortable(),
+                    ->label('Tujuan'),
 
                 TextColumn::make('status')
-                    ->label('Status')
                     ->badge()
                     ->color(fn($state) => match ($state) {
+                        'prepared' => 'info',
                         'ongoing' => 'warning',
                         'completed' => 'success',
                         'cancelled' => 'danger',
-                        'prepared' => 'info', // tambahkan ini
-                    })
-                    ->action(
-                        Action::make('change_status')
-                            ->label('Ubah Status')
-                            ->form([
-                                \Filament\Forms\Components\Select::make('status')
-                                    ->options([
-                                        'ongoing' => 'ongoing',
-                                        'completed' => 'Completed',
-                                        'cancelled' => 'Cancelled',
-                                        'prepared' => 'Prepared',
-                                    ])
-                                    ->required()
-                            ])
-                            ->action(function ($record, $data) {
-                                $record->update([
-                                    'status' => $data['status']
-                                ]);
-                            })
-                    ),
+                        default => 'secondary',
+                    }),
             ])
-            ->filters([])
+
+            ->actions([
+                Action::make('change_status')
+                    ->label('Ubah Status')
+                    ->form([
+                        Select::make('status')
+                            ->options([
+                                'prepared' => 'Prepared',
+                                'ongoing' => 'Ongoing',
+                                'completed' => 'Completed',
+                                'cancelled' => 'Cancelled',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function ($record, $data) {
+
+                        $record->update([
+                            'status' => $data['status']
+                        ]);
+
+                        $record->load(['booking.user', 'driver']);
+
+                        if ($record->booking?->user?->email) {
+                            Mail::to($record->booking->user->email)
+                                ->send(new DeliveryStatusUpdatedMail($record));
+                        }
+
+                        Notification::make()
+                            ->title('Status berhasil diupdate & email customer terkirim')
+                            ->success()
+                            ->send();
+                    }),
+
+            ])
+
             ->headerActions([
                 Action::make('generate')
                     ->label('Generate Delivery Order')
@@ -91,10 +96,7 @@ class DeliveryOrdersTable
                     ->form([
                         Select::make('booking_id')
                             ->label('Booking')
-                            ->relationship(
-                                name: 'booking',
-                                titleAttribute: 'booking_code'
-                            )
+                            ->relationship('booking', 'booking_code')
                             ->getOptionLabelFromRecordUsing(
                                 fn($record) =>
                                 $record->booking_code . ' - ' . ($record->user->name ?? '-')
@@ -104,22 +106,31 @@ class DeliveryOrdersTable
                             ->required(),
                     ])
                     ->action(function (array $data) {
-                        try {
-                            app(DeliveryOrderService::class)->generate($data);
 
-                            Notification::make()
-                                ->title('Delivery Order berhasil dibuat')
-                                ->success()
-                                ->send();
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title($e->getMessage())
-                                ->danger()
-                                ->send();
+                        $delivery = app(DeliveryOrderService::class)
+                            ->generate($data);
+
+                        $delivery->load([
+                            'driver',
+                            'vehicle',
+                            'booking.user',
+                            'schedule'
+                        ]);
+
+                        if ($delivery->driver?->email) {
+                            Mail::to($delivery->driver->email)
+                                ->send(new DeliveryOrderCreatedMail($delivery));
                         }
+
+                        Notification::make()
+                            ->title('Delivery Order dibuat & email driver terkirim')
+                            ->success()
+                            ->send();
                     }),
+
             ])
-            ->toolbarActions([
+
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

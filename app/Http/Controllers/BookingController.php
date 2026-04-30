@@ -20,7 +20,7 @@ class BookingController extends Controller
     Mail::raw(
         "Booking baru masuk ID: ".$booking->id,
         function ($msg) {
-            $msg->to('admin@travel.com')
+            $msg->to('nylaadjah@gmail.com')
                 ->subject('Booking Baru');
         }
     );

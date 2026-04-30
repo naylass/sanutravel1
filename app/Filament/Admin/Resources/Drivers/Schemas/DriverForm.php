@@ -28,6 +28,11 @@ class DriverForm
                     ->tel()
                     ->required(),
 
+                TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required(),
+
                 TextInput::make('birth_place')
                     ->label('Tempat Lahir')
                     ->required(),

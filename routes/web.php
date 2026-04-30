@@ -11,7 +11,7 @@ use App\Http\Controllers\DeliveryOrderController;
 // ==========================
 Route::get('/test-mail', function () {
     Mail::raw('Test email Laravel berhasil!', function ($message) {
-        $message->to('nylaadjah@gmail.com')
+        $message->to('nylasjdh@gmail.com')
                 ->subject('Test Email');
     });
 
