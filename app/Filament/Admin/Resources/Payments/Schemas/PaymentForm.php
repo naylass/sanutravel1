@@ -24,7 +24,9 @@ class PaymentForm
                     name: 'booking',
                     titleAttribute: 'booking_code',
                     modifyQueryUsing: function ($query) {
-                        if (!Auth::user()->hasRole('admin')) {
+                        $user = Auth::user();
+
+                        if (! $user || ! (method_exists($user, 'hasRole') && $user->hasRole('admin'))) {
                             $query->where('user_id', Auth::id());
                         }
                     }

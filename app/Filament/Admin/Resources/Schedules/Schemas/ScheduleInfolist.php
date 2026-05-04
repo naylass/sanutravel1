@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Schedules\Schemas;
 
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
+use Carbon\Carbon;
 
 class ScheduleInfolist
 {
@@ -13,43 +14,65 @@ class ScheduleInfolist
 
             TextEntry::make('departure_date')
                 ->label('Waktu Keberangkatan')
+                ->icon('heroicon-o-clock')
                 ->formatStateUsing(function ($record) {
-                    return \Carbon\Carbon::parse($record->departure_date . ' ' . $record->departure_time)
+                    return Carbon::parse($record->departure_date . ' ' . $record->departure_time)
                         ->format('d M Y H:i');
                 }),
 
             TextEntry::make('pickup_point')
-                ->label('Titik Penjemputan'),
+                ->label('Titik Penjemputan')
+                ->icon('heroicon-o-map-pin'),
 
             TextEntry::make('destination')
-                ->label('Tujuan'),
+                ->label('Tujuan')
+                ->icon('heroicon-o-flag'),
 
             TextEntry::make('vehicle.brand')
-                ->label('Kendaraan'),
+                ->label('Kendaraan')
+                ->icon('heroicon-o-truck')
+                ->formatStateUsing(fn($state) => $state ?? '-'),
 
             TextEntry::make('driver.name')
-                ->label('Sopir'),
+                ->label('Sopir')
+                ->icon('heroicon-o-user')
+                ->formatStateUsing(fn($state) => $state ?? '-'),
 
             TextEntry::make('bookings')
                 ->label('Layanan')
+                ->icon('heroicon-o-ticket')
                 ->formatStateUsing(function ($record) {
+
                     return $record->bookings
-                        ->map(fn($b) => $b->service->name ?? '-')
+                        ->pluck('service.name')
+                        ->filter()
                         ->unique()
-                        ->join(', ');
+                        ->implode(', ') ?: '-';
                 }),
 
-            TextEntry::make('total_passengers')
-                ->label('Jumlah Customer')
-                ->formatStateUsing(fn($record) => $record->bookings->sum('total_passengers')),
+            TextEntry::make('total_penumpang')
+                ->label('Jumlah Penumpang')
+                ->state(function ($record) {
+
+                    return $record->bookings()
+                        ->sum('total_passengers') . ' orang';
+                }),
 
             TextEntry::make('created_at')
                 ->label('Dibuat Pada')
-                ->dateTime(),
+                ->icon('heroicon-o-plus-circle')
+                ->formatStateUsing(
+                    fn($state) =>
+                    Carbon::parse($state)->format('d M Y H:i')
+                ),
 
             TextEntry::make('updated_at')
                 ->label('Diperbarui Pada')
-                ->dateTime(),
+                ->icon('heroicon-o-pencil-square')
+                ->formatStateUsing(
+                    fn($state) =>
+                    Carbon::parse($state)->format('d M Y H:i')
+                ),
         ]);
     }
 }

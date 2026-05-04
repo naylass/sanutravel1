@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\BadgeColumn;
 
 class IncomesTable
 {
@@ -18,64 +19,70 @@ class IncomesTable
         return $table
             ->columns([
 
-                // 🎫 BOOKING CODE (via payment)
+                // 🎫 BOOKING (AMAN DARI NULL)
                 TextColumn::make('payment.booking.booking_code')
-                    ->label('Kode Booking')
+                    ->label('Booking')
+                    ->formatStateUsing(fn ($record) =>
+                        $record->payment?->booking?->booking_code ?? '-'
+                    )
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
 
                 // 💰 AMOUNT
                 TextColumn::make('amount')
-                    ->label('Jumlah')
+                    ->label('Income')
                     ->money('IDR')
-                    ->sortable(),
+                    ->sortable()
+                    ->color('success')
+                    ->weight('bold'),
 
-                // 📊 TYPE INCOME
-                TextColumn::make('income_type')
+                BadgeColumn::make('income_type')
                     ->label('Tipe')
-                    ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'booking' => 'success',
-                        'other' => 'warning',
-                        default => 'gray',
-                    }),
+                    ->colors([
+                        'success' => 'booking',
+                        'warning' => 'manual',
+                    ])
+                    ->icons([
+                        'heroicon-o-banknotes' => 'booking',
+                        'heroicon-o-pencil' => 'manual',
+                    ]),
 
-                // 📝 DESCRIPTION
                 TextColumn::make('description')
                     ->label('Deskripsi')
-                    ->limit(30)
+                    ->wrap()
+                    ->limit(40)
                     ->placeholder('-'),
 
-                // 📅 INCOME DATE (FIXED)
                 TextColumn::make('income_date')
                     ->label('Tanggal')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('info'),
 
-                // 📅 CREATED AT
                 TextColumn::make('created_at')
                     ->label('Dibuat')
-                    ->dateTime()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('updated_at')
-                    ->label('Update')
-                    ->dateTime()
+                    ->since()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
 
             ->recordActions([
                 ActionGroup::make([
-                    ViewAction::make()->icon('heroicon-o-eye'),
-                    EditAction::make()->icon('heroicon-o-pencil'),
-                    DeleteAction::make()->icon('heroicon-o-trash'),
+                    ViewAction::make(),
+                    EditAction::make()
+                        ->visible(fn ($record) => $record->income_type === 'manual'),
+                    DeleteAction::make()
+                        ->visible(fn ($record) => $record->income_type === 'manual'),
                 ])
             ])
 
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+
+            ->defaultSort('income_date', 'desc');
     }
 }

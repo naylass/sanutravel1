@@ -11,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DeliveryStatusUpdatedMail;
 use App\Mail\DeliveryOrderCreatedMail;
@@ -58,6 +59,10 @@ class DeliveryOrdersTable
             ->actions([
                 Action::make('change_status')
                     ->label('Ubah Status')
+
+                    // 👇 hanya driver yang lihat tombol
+                    ->visible(fn() => Auth::user()?->role === 'driver')
+
                     ->form([
                         Select::make('status')
                             ->options([
@@ -68,7 +73,13 @@ class DeliveryOrdersTable
                             ])
                             ->required(),
                     ])
+
                     ->action(function ($record, $data) {
+
+                        // 🔒 HARD SECURITY (WAJIB)
+                        if (Auth::user()?->role !== 'driver') {
+                            abort(403, 'Unauthorized');
+                        }
 
                         $record->update([
                             'status' => $data['status']
@@ -82,7 +93,7 @@ class DeliveryOrdersTable
                         }
 
                         Notification::make()
-                            ->title('Status berhasil diupdate & email customer terkirim')
+                            ->title('Status berhasil diupdate')
                             ->success()
                             ->send();
                     }),
@@ -95,14 +106,34 @@ class DeliveryOrdersTable
                     ->icon(Heroicon::ClipboardDocument)
                     ->form([
                         Select::make('booking_id')
-                            ->label('Booking')
-                            ->relationship('booking', 'booking_code')
-                            ->getOptionLabelFromRecordUsing(
-                                fn($record) =>
-                                $record->booking_code . ' - ' . ($record->user->name ?? '-')
-                            )
-                            ->searchable(['booking_code', 'user.name'])
-                            ->preload()
+                            ->label('Pilih Booking')
+
+                            ->options(function () {
+                                return \App\Models\Booking::query()
+                                    ->whereDoesntHave('deliveryOrder')
+                                    ->with('user')
+                                    ->get()
+                                    ->mapWithKeys(function ($booking) {
+                                        return [
+                                            $booking->id => $booking->booking_code . ' - ' . ($booking->user->name ?? '-'),
+                                        ];
+                                    });
+                            })
+
+                            ->searchable()
+
+                            ->getSearchResultsUsing(function (string $search) {
+                                return \App\Models\Booking::query()
+                                    ->whereDoesntHave('deliveryOrder')
+                                    ->where('booking_code', 'like', "%{$search}%")
+                                    ->with('user')
+                                    ->get()
+                                    ->mapWithKeys(function ($booking) {
+                                        return [
+                                            $booking->id => $booking->booking_code . ' - ' . ($booking->user->name ?? '-'),
+                                        ];
+                                    });
+                            })
                             ->required(),
                     ])
                     ->action(function (array $data) {

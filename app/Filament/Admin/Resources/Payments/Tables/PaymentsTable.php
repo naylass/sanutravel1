@@ -9,6 +9,11 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
+
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentVerifiedMail;
+use App\Mail\PaymentRejectedMail;
 
 class PaymentsTable
 {
@@ -17,42 +22,29 @@ class PaymentsTable
         return $table
             ->columns([
 
-                // 📦 BOOKING (kode + customer)
                 TextColumn::make('booking')
                     ->label('Kode Booking')
                     ->formatStateUsing(fn ($record) =>
                         ($record->booking?->booking_code ?? '-') .
                         ' - ' . ($record->booking?->user?->name ?? '-')
                     )
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(),
 
-                // 💳 PAYMENT METHOD
                 TextColumn::make('payment_method')
                     ->label('Metode')
-                    ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'transfer' => 'primary',
-                        'cash' => 'success',
-                        'ewallet' => 'warning',
-                        default => 'gray',
-                    }),
+                    ->badge(),
 
-                // 📅 PAYMENT DATE
                 TextColumn::make('payment_date')
                     ->label('Tanggal')
                     ->dateTime('d M Y H:i'),
 
-                // 💰 AMOUNT
                 TextColumn::make('amount')
                     ->label('Total')
                     ->money('IDR'),
 
-                // 🧾 PROOF IMAGE
                 ImageColumn::make('proof_image')
                     ->label('Bukti'),
 
-                // 📊 STATUS (CLICKABLE ACTION DI SINI)
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -61,40 +53,58 @@ class PaymentsTable
                         'verified' => 'success',
                         'rejected' => 'danger',
                         default => 'gray',
-                    })
+                    }),
 
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => match ($record->status) {
-                                'waiting' => 'verified',
-                                'verified' => 'rejected',
-                                'rejected' => 'waiting',
-                                default => 'waiting',
-                            }
-                        ]);
-                    })
-                    ->tooltip('Klik untuk ubah status'),
-
-                // 🕒 CREATED
-                TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                // 🕒 UPDATED
-                TextColumn::make('updated_at')
-                    ->label('Diupdate')
-                    ->dateTime()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
 
-            // 🎯 ROW ACTIONS (TANPA STATUS ACTION)
             ->recordActions([
+
                 ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make(),
+
+                    // ✅ VERIFIED BUTTON
+                    Action::make('verify')
+                        ->label('Verified')
+                        ->color('success')
+                        ->visible(fn ($record) => $record->status === 'waiting')
+                        ->requiresConfirmation()
+                        ->action(function ($record) {
+
+                            $record->update([
+                                'status' => 'verified'
+                            ]);
+
+                            $record->load('booking.user');
+
+                            if ($record->booking?->user?->email) {
+                                Mail::to($record->booking->user->email)
+                                    ->send(new PaymentVerifiedMail($record));
+                            }
+                        }),
+
+                    // ❌ REJECT BUTTON
+                    Action::make('reject')
+                        ->label('Reject')
+                        ->color('danger')
+                        ->visible(fn ($record) => $record->status === 'waiting')
+                        ->requiresConfirmation()
+                        ->action(function ($record) {
+
+                            $record->update([
+                                'status' => 'rejected'
+                            ]);
+
+                            $record->load('booking.user');
+
+                            if ($record->booking?->user?->email) {
+                                Mail::to($record->booking->user->email)
+                                    ->send(new PaymentRejectedMail($record));
+                            }
+                        }),
                 ]),
+
             ]);
     }
 }

@@ -28,7 +28,7 @@ class IncomeResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return IncomeForm::configure($schema);
+        return $schema->schema(IncomeForm::configure());
     }
 
     public static function infolist(Schema $schema): Schema

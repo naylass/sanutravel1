@@ -5,51 +5,55 @@ namespace App\Filament\Admin\Resources\Incomes\Schemas;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
-use Filament\Schemas\Schema;
+use Filament\Forms\Get;
+use App\Models\Payment;
 
 class IncomeForm
 {
-    public static function configure(Schema $schema): Schema
+    public static function configure(): array
     {
-        return $schema
-            ->components([
+        return [
+            Select::make('income_type')
+                ->label('Tipe Pendapatan')
+                ->options([
+                    'manual' => 'Manual',
+                ])
+                ->default('manual')
+                ->required(),
 
-                // 🔗 PAYMENT RELATION
-                Select::make('payment_id')
-                    ->label('Payment')
-                    ->relationship('payment', 'id')
-                    ->getOptionLabelFromRecordUsing(fn ($record) =>
-                        $record->booking->booking_code . ' - Rp ' . number_format($record->amount, 0, ',', '.')
-                    )
-                    ->searchable()
-                    ->required(),
+            Select::make('payment_id')
+                ->label('Referensi Payment (Opsional)')
+                ->relationship('payment', 'id')
+                ->getOptionLabelFromRecordUsing(
+                    fn($record) =>
+                    $record->booking->booking_code . ' - Rp ' . number_format($record->amount, 0, ',', '.')
+                )
+                ->searchable()
+                ->preload()
+                ->live()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    if (!$state) return;
 
-                // 💰 AMOUNT
-                TextInput::make('amount')
-                    ->label('Amount')
-                    ->numeric()
-                    ->required(),
+                    $payment = Payment::with('booking')->find($state);
 
-                // 📊 INCOME TYPE
-                Select::make('income_type')
-                    ->label('Income Type')
-                    ->options([
-                        'booking' => 'Booking',
-                        'other' => 'Other',
-                    ])
-                    ->default('booking')
-                    ->required(),
+                    if ($payment) {
+                        $set('amount', $payment->amount);
+                        $set('description', 'Manual dari booking ' . $payment->booking->booking_code);
+                    }
+                }),
 
-                    // 📅 DATE FIXED
-                DatePicker::make('income_date')
-                    ->label('Income Date')
-                    ->default(now())
-                    ->required(),
-                // 📝 DESCRIPTION
-                TextInput::make('description')
-                    ->label('Description')
-                    ->placeholder('Optional')
-                    ->columnSpanFull(),
-            ]);
+            TextInput::make('amount')
+                ->label('Jumlah')
+                ->numeric()
+                ->required()
+                ->prefix('Rp'),
+
+            DatePicker::make('income_date')
+                ->default(now())
+                ->required(),
+
+            TextInput::make('description')
+                ->columnSpanFull(),
+        ];
     }
 }
