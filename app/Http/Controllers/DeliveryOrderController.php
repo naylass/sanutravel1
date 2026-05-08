@@ -4,42 +4,91 @@ namespace App\Http\Controllers;
 
 use App\Models\DeliveryOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DeliveryOrderController extends Controller
 {
-    // DRIVER LIHAT ORDER
+    // =========================
+    // INDEX (HALAMAN DRIVER)
+    // =========================
+    public function index()
+    {
+        $orders = DeliveryOrder::where('driver_id', Auth::id())
+            ->with(['booking', 'schedule'])
+            ->latest()
+            ->get();
+
+        return view('driver.delivery', compact('orders'));
+    }
+
+    // =========================
+    // API MY ORDERS
+    // =========================
     public function myOrders()
     {
-        $driver = auth()->user()->driver;
-
-        $orders = DeliveryOrder::where('driver_id', $driver->id)
+        $orders = DeliveryOrder::where('driver_id', Auth::id())
             ->with(['booking', 'schedule'])
             ->get();
 
         return response()->json($orders);
     }
 
-    // START
+    // =========================
+    // START TRIP
+    // =========================
     public function startTrip($id)
     {
-        $order = DeliveryOrder::findOrFail($id);
+        $order = DeliveryOrder::where('driver_id', Auth::id())
+            ->findOrFail($id);
 
         $order->update([
             'status' => 'ongoing'
         ]);
 
-        return response()->json(['message' => 'Perjalanan dimulai']);
+        return back()->with('success', 'Perjalanan dimulai');
     }
 
-    // FINISH
+    // =========================
+    // FINISH TRIP
+    // =========================
     public function finishTrip($id)
     {
-        $order = DeliveryOrder::findOrFail($id);
+        $order = DeliveryOrder::where('driver_id', Auth::id())
+            ->findOrFail($id);
 
         $order->update([
             'status' => 'completed'
         ]);
 
-        return response()->json(['message' => 'Perjalanan selesai']);
+        return back()->with('success', 'Perjalanan selesai');
+    }
+
+    // =========================
+    // STORE ORDER
+    // =========================
+    public function store($schedule_id)
+    {
+        $order = DeliveryOrder::create([
+            'driver_id' => Auth::id(),
+            'schedule_id' => $schedule_id,
+            'status' => 'pending',
+        ]);
+
+        return response()->json($order);
+    }
+
+    // =========================
+    // UPDATE STATUS
+    // =========================
+    public function updateStatus($id, Request $request)
+    {
+        $order = DeliveryOrder::where('driver_id', Auth::id())
+            ->findOrFail($id);
+
+        $order->update([
+            'status' => $request->status
+        ]);
+
+        return back()->with('success', 'Status diperbarui');
     }
 }

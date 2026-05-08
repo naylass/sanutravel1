@@ -20,9 +20,6 @@ class PaymentController extends Controller
 
         $booking = Booking::findOrFail($request->booking_id);
 
-        // =========================
-        // CASH PAYMENT
-        // =========================
         if ($request->method == 'cash') {
 
             $payment = Payment::create([
@@ -34,7 +31,6 @@ class PaymentController extends Controller
 
             $booking->update(['status' => 'confirmed']);
 
-            // 📩 EMAIL CUSTOMER (AMAN)
             if ($booking->customer) {
                 Mail::raw(
                     "Pembayaran cash kamu berhasil. Booking ID: ".$booking->id,
@@ -45,9 +41,7 @@ class PaymentController extends Controller
                 );
             }
 
-            // 📩 EMAIL ADMIN
             $admins = User::where('role', 'admin')->pluck('email');
-
             foreach ($admins as $email) {
                 Mail::raw(
                     "Payment cash masuk untuk Booking ID: ".$booking->id,
@@ -64,9 +58,6 @@ class PaymentController extends Controller
             ]);
         }
 
-        // =========================
-        // TRANSFER PAYMENT
-        // =========================
         $payment = Payment::create([
             'booking_id' => $booking->id,
             'amount' => $request->amount,

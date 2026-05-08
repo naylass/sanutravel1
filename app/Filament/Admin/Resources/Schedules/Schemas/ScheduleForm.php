@@ -22,28 +22,6 @@ class ScheduleForm
 
             Hidden::make('base_booking_id'),
 
-            // 🚗 KENDARAAN
-            Select::make('vehicle_id')
-                ->label('Kendaraan')
-                ->relationship('vehicle', 'brand')
-                ->required()
-                ->reactive()
-                ->afterStateUpdated(function ($state, Set $set) {
-                    $vehicle = Vehicle::find($state);
-                    if ($vehicle) {
-                        $set('driver_id', $vehicle->driver_id);
-                    }
-                }),
-
-            // 👨‍✈️ DRIVER
-            Select::make('driver_id')
-                ->label('Sopir')
-                ->relationship('driver', 'name')
-                ->disabled()
-                ->dehydrated()
-                ->required(),
-
-            // 📦 BOOKING
             Select::make('bookings')
                 ->label('Pilih Customer')
                 ->multiple()
@@ -148,7 +126,6 @@ class ScheduleForm
                         }
                     }
 
-                    // 🔥 AUTO FILL
                     $set('departure_date', $base->pickup_date);
                     $set('departure_time', $base->pickup_time);
                     $set('destination', $base->destination);
@@ -158,7 +135,6 @@ class ScheduleForm
                         $bookings->pluck('pickup_location')->unique()->join(', ')
                     );
 
-                    // 🔥 CEK KAPASITAS
                     $vehicle = Vehicle::find($get('vehicle_id'));
 
                     if ($vehicle) {
@@ -176,6 +152,25 @@ class ScheduleForm
                         }
                     }
                 }),
+
+            Select::make('vehicle_id')
+                ->label('Kendaraan')
+                ->relationship('vehicle', 'brand')
+                ->required()
+                ->reactive()
+                ->afterStateUpdated(function ($state, Set $set) {
+                    $vehicle = Vehicle::find($state);
+                    if ($vehicle) {
+                        $set('driver_id', $vehicle->driver_id);
+                    }
+                }),
+
+            Select::make('driver_id')
+                ->label('Sopir')
+                ->relationship('driver', 'name')
+                ->disabled()
+                ->dehydrated()
+                ->required(),
 
             // 📅
             DatePicker::make('departure_date')

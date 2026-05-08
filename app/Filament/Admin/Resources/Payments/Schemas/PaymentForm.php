@@ -16,8 +16,6 @@ class PaymentForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
-
-            // 📦 BOOKING SELECT (FIXED + SECURE)
             Select::make('booking_id')
                 ->label('Booking Transfer')
                 ->relationship(
@@ -40,8 +38,6 @@ class PaymentForm
                 ->searchable()
                 ->preload()
                 ->reactive()
-
-                // auto fill data
                 ->afterStateUpdated(function ($state, $set) {
 
                     $booking = \App\Models\Booking::with('user')->find($state);
@@ -60,13 +56,11 @@ class PaymentForm
 
                 ->required(),
 
-            // 🔍 INFO BOOKING
             TextInput::make('booking_info')
                 ->label('Info Booking')
                 ->readOnly()
                 ->columnSpanFull(),
 
-            // 💳 PAYMENT METHOD
             Select::make('payment_method')
                 ->label('Metode Pembayaran')
                 ->options([
@@ -84,7 +78,6 @@ class PaymentForm
                     );
                 }),
 
-            // 🏦 TRANSFER SECTION
             Section::make('Informasi Transfer')
                 ->visible(fn($get) => $get('payment_method') === 'transfer')
                 ->schema([
@@ -98,7 +91,7 @@ class PaymentForm
                         ->readOnly(),
 
                     TextInput::make('account_name')
-                        ->default('PT SANU TRAVEL')
+                        ->default('SANU TRAVEL')
                         ->readOnly(),
 
                     FileUpload::make('proof_image')
@@ -106,11 +99,9 @@ class PaymentForm
                         ->required(fn($get) => $get('payment_method') === 'transfer')
                 ]),
 
-            // 📅 DATE
             DateTimePicker::make('payment_date')
                 ->required(),
 
-            // 💰 AMOUNT
             TextInput::make('amount')
                 ->numeric()
                 ->readOnly()
