@@ -37,7 +37,7 @@
                         <td style="padding:25px; color:#334155;">
 
                             <p style="margin-top:0;">
-                                Halo <b>{{ $booking->user->name }}</b>,
+                                Halo <b>{{ $booking->customer_name }}</b>,
                             </p>
 
                             <p>

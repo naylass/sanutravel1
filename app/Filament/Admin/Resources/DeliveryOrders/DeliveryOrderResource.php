@@ -52,7 +52,7 @@ class DeliveryOrderResource extends Resource
     {
         return [
             'index' => ListDeliveryOrders::route('/'),
-            'create' => CreateDeliveryOrder::route('/create'),
+            // 'create' => CreateDeliveryOrder::route('/create'),
             'view' => ViewDeliveryOrder::route('/{record}'),
             'edit' => EditDeliveryOrder::route('/{record}/edit'),
         ];

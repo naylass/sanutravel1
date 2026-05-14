@@ -18,7 +18,7 @@ class Schedule extends Model
         'driver_id',
         'departure_date',
         'departure_time',
-        'pickup_point',
+        'pickup_location',
         'destination',
         'available_seats',
     ];
@@ -38,7 +38,7 @@ class Schedule extends Model
         return $this->hasMany(Booking::class);
     }
 
-    public function deliveryOrders()
+    public function deliveryOrder()
     {
         return $this->hasOne(DeliveryOrder::class);
     }
@@ -52,5 +52,12 @@ class Schedule extends Model
     public function isFull(): bool
     {
         return $this->remainingSeats() <= 0;
+    }
+
+    public function getTypeAttribute()
+    {
+        return $this->bookings->count() > 1
+            ? 'Reguler'
+            : 'Eksklusif';
     }
 }

@@ -84,7 +84,7 @@ class PaymentResource extends Resource
 
         return $user->hasAnyRole([
             'admin',
-            'customer',
+            'driver',
         ]);
     }
 
@@ -99,8 +99,6 @@ class PaymentResource extends Resource
 
     public static function canCreate(): bool
     {
-        return Auth::user()->hasAnyRole([
-            'customer'
-        ]);
+        return false;
     }
 }

@@ -33,7 +33,7 @@ style="background:#ffffff; margin:30px auto; border-radius:12px; overflow:hidden
             </h2>
 
             <p style="margin:10px 0;">
-                Halo <b>{{ $payment->booking->user->name }}</b>,
+                Halo <b>{{ $payment->booking->customer_name ?? '-' }}</b>,
             </p>
 
             <p style="margin:10px 0; color:#4b5563;">

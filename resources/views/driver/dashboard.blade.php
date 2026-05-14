@@ -10,124 +10,260 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        * {
+        *{
             font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body{
+            background: #f6f8fc;
+        }
+
+        .glass{
+            backdrop-filter: blur(14px);
+        }
+
+        .card-hover{
+            transition: all .2s ease;
+        }
+
+        .card-hover:active{
+            transform: scale(.98);
+        }
+
+        .card-hover:hover{
+            transform: translateY(-2px);
+        }
+
+        .soft-shadow{
+            box-shadow:
+                0 10px 30px rgba(15, 23, 42, 0.06),
+                0 2px 10px rgba(15, 23, 42, 0.03);
         }
     </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen">
 
-<header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
+{{-- MAIN CONTAINER --}}
+<div class="max-w-md mx-auto min-h-screen relative">
 
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    {{-- HEADER --}}
+    <div class="relative overflow-hidden rounded-b-[34px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
 
-        <div class="flex items-center gap-2">
+        {{-- ORNAMENT --}}
+        <div class="absolute -top-14 -right-10 w-44 h-44 bg-white/5 rounded-full"></div>
+        <div class="absolute top-28 -left-10 w-32 h-32 bg-white/5 rounded-full"></div>
 
-            <div class="w-8 h-8 bg-green-600 rounded-xl flex items-center justify-center shadow">
+        <div class="relative px-5 pt-8 pb-7">
 
-                <svg class="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
+            {{-- TOPBAR --}}
+            <div class="flex items-start justify-between">
 
-                    <path stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2.5"
-                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                <div>
+                    <p class="text-slate-300 text-xs font-medium tracking-wide mb-1">
+                        DRIVER PANEL
+                    </p>
 
-                </svg>
+                    <h1 class="text-white text-[26px] font-extrabold leading-tight">
+                        Halo 👋
+                    </h1>
+
+                    <p class="text-slate-300 text-sm mt-1">
+                        Semoga perjalanan hari ini lancar
+                    </p>
+                </div>
+
+                <form method="POST" action="/logout">
+                    @csrf
+
+                    <button
+                        class="bg-white/10 glass border border-white/10 text-white text-sm px-4 py-2 rounded-2xl active:scale-95 transition">
+                        Logout
+                    </button>
+                </form>
 
             </div>
 
-            <span class="font-extrabold text-green-700">
-                Sanu<span class="text-gray-800">Travel</span>
-            </span>
+            {{-- PROFILE CARD --}}
+            <div class="mt-6 bg-white/10 glass border border-white/10 rounded-[28px] p-4">
+
+                <div class="flex items-center gap-4">
+
+                    {{-- PHOTO --}}
+                    @if($driver?->photo)
+
+                        <img
+                            src="{{ asset('storage/'.$driver->photo) }}"
+                            class="w-[68px] h-[68px] rounded-[22px] object-cover border-2 border-white/20 shadow-lg flex-shrink-0"
+                        >
+
+                    @else
+
+                        <div class="w-[68px] h-[68px] rounded-[22px] bg-white/10 flex items-center justify-center text-3xl flex-shrink-0">
+                            👤
+                        </div>
+
+                    @endif
+
+                    {{-- INFO --}}
+                    <div class="min-w-0 flex-1">
+
+                        <h2 class="text-white text-lg font-bold truncate">
+                            {{ $driver->name ?? '-' }}
+                        </h2>
+
+                        <p class="text-slate-300 text-sm truncate mt-0.5">
+                            {{ $driver->phone ?? '-' }}
+                        </p>
+
+                        <div class="mt-3 flex items-center gap-2">
+
+                            <div class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></div>
+
+                            <span class="text-emerald-100 text-xs font-semibold">
+                                Driver Aktif
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
-        <form method="POST" action="/logout">
-            @csrf
-
-            <button type="submit"
-                onclick="return confirm('Yakin ingin keluar?')"
-                class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-500 transition font-medium py-1.5 px-3 rounded-xl hover:bg-red-50">
-
-                <svg class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-
-                    <path stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-
-                </svg>
-
-                Keluar
-
-            </button>
-        </form>
-
     </div>
 
-</header>
+    {{-- CONTENT --}}
+    <div class="px-4 pt-5 pb-32">
 
-@php
+        {{-- STATS --}}
+        <div class="grid grid-cols-2 gap-4">
 
-    $driver = auth()->user();
+            {{-- CUSTOMER --}}
+            <div class="bg-white rounded-[28px] p-5 soft-shadow border border-slate-100">
 
-    $statHariIni = [
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-xl mb-4">
+                    👥
+                </div>
 
-        'customer'     => 4,
-        'km'           => 320,
-        'penghasilan'  => 1200000
-
-    ];
-
-@endphp
-
-<div class="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
-
-    {{-- GREETING --}}
-    <div class="bg-gradient-to-r from-green-700 to-green-500 rounded-3xl p-6 text-white relative overflow-hidden shadow-lg shadow-green-200">
-
-        <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full"></div>
-
-        <div class="relative flex items-start justify-between">
-
-            <div>
-
-                <p class="text-green-100 text-sm mb-1">
-                    🚗 Driver Aktif
+                <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    Total Customer
                 </p>
 
-                <h2 class="text-2xl font-extrabold mb-3">
-                    {{ $driver->name }}
+                <h2 class="text-[32px] leading-none font-extrabold text-slate-800 mt-2">
+                    {{ $customerCount }}
                 </h2>
 
-                <div class="flex flex-wrap gap-2">
-
-                    <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
-
-                        {{ $driver->plate_number ?? 'Belum diatur' }}
-
-                    </span>
-
-                    <span class="bg-white/15 text-green-100 text-xs px-3 py-1 rounded-full">
-
-                        {{ $driver->vehicle_name ?? 'Kendaraan Driver' }}
-
-                    </span>
-
-                </div>
+                <p class="text-slate-400 text-xs mt-2">
+                    Customer aktif hari ini
+                </p>
 
             </div>
 
-            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+            {{-- DELIVERY --}}
+            <div class="bg-white rounded-[28px] p-5 soft-shadow border border-slate-100">
 
-                🚐
+                <div class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-xl mb-4">
+                    🚐
+                </div>
+
+                <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    Delivery
+                </p>
+
+                <h2 class="text-[32px] leading-none font-extrabold text-slate-800 mt-2">
+                    {{ $ordersToday ?? 0 }}
+                </h2>
+
+                <p class="text-slate-400 text-xs mt-2">
+                    Perjalanan hari ini
+                </p>
+
+            </div>
+
+        </div>
+
+        {{-- MENU --}}
+        <div class="mt-7">
+
+            <div class="flex items-center justify-between mb-4">
+
+                <h3 class="font-bold text-slate-700">
+                    Menu Utama
+                </h3>
+
+                <span class="text-xs text-slate-400">
+                    Sanu Travel
+                </span>
+
+            </div>
+
+            <div class="space-y-4">
+
+                {{-- DELIVERY --}}
+                <a href="/driver/delivery"
+                   class="card-hover relative overflow-hidden block rounded-[30px] bg-gradient-to-br from-slate-800 to-slate-700 p-5 text-white soft-shadow">
+
+                    <div class="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full"></div>
+
+                    <div class="relative flex items-center justify-between">
+
+                        <div>
+
+                            <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-2xl mb-4">
+                                🚐
+                            </div>
+
+                            <h2 class="font-bold text-lg">
+                                Delivery Order
+                            </h2>
+
+                            <p class="text-slate-300 text-sm mt-1 leading-relaxed">
+                                Kelola perjalanan customer dengan mudah
+                            </p>
+
+                        </div>
+
+                        <div class="text-2xl opacity-40">
+                            →
+                        </div>
+
+                    </div>
+
+                </a>
+
+                {{-- PAYMENT --}}
+                <a href="/driver/payments"
+                   class="card-hover block bg-white rounded-[30px] p-5 border border-slate-100 soft-shadow">
+
+                    <div class="flex items-center justify-between gap-4">
+
+                        <div>
+
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-2xl mb-4">
+                                💰
+                            </div>
+
+                            <h2 class="font-bold text-slate-800 text-lg">
+                                Cash Payment
+                            </h2>
+
+                            <p class="text-slate-400 text-sm mt-1 leading-relaxed">
+                                Upload bukti pembayaran cash customer
+                            </p>
+
+                        </div>
+
+                        <div class="text-2xl text-slate-300 flex-shrink-0">
+                            →
+                        </div>
+
+                    </div>
+
+                </a>
 
             </div>
 
@@ -135,103 +271,59 @@
 
     </div>
 
-    {{-- STATISTIK --}}
-    <div>
+    {{-- BOTTOM NAV --}}
+    <div class="fixed bottom-4 left-0 right-0 z-50 px-4">
 
-        <h3 class="font-bold text-gray-700 text-sm mb-3 flex items-center gap-2">
+        <div class="max-w-md mx-auto">
 
-            <span class="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center text-xs">
-                📊
-            </span>
+            <div class="bg-white/90 glass border border-white rounded-[28px] px-6 py-3 soft-shadow">
 
-            Statistik Hari Ini
+                <div class="flex items-center justify-around">
 
-        </h3>
+                    {{-- HOME --}}
+                    <a href="/driver/dashboard"
+                       class="flex flex-col items-center text-slate-800">
 
-        <div class="grid grid-cols-3 gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center mb-1 text-lg">
+                            🏠
+                        </div>
 
-            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                        <span class="text-[11px] font-bold">
+                            Home
+                        </span>
 
-                <div class="text-3xl font-extrabold text-green-700">
+                    </a>
 
-                    {{ $statHariIni['customer'] }}
+                    {{-- DELIVERY --}}
+                    <a href="/driver/delivery"
+                       class="flex flex-col items-center text-slate-400">
+
+                        <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 text-lg">
+                            🚐
+                        </div>
+
+                        <span class="text-[11px] font-semibold">
+                            Delivery
+                        </span>
+
+                    </a>
+
+                    {{-- PAYMENT --}}
+                    <a href="/driver/payments"
+                       class="flex flex-col items-center text-slate-400">
+
+                        <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 text-lg">
+                            💰
+                        </div>
+
+                        <span class="text-[11px] font-semibold">
+                            Payment
+                        </span>
+
+                    </a>
 
                 </div>
 
-                <div class="text-xs text-gray-400 mt-1 font-medium">
-                    Customer
-                </div>
-
-            </div>
-
-            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-
-                <div class="text-3xl font-extrabold text-blue-600">
-
-                    {{ $statHariIni['km'] }}
-
-                </div>
-
-                <div class="text-xs text-gray-400 mt-1 font-medium">
-                    KM
-                </div>
-
-            </div>
-
-            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-
-                <div class="text-2xl font-extrabold text-purple-600">
-
-                    {{ number_format($statHariIni['penghasilan']/1000,0) }}K
-
-                </div>
-
-                <div class="text-xs text-gray-400 mt-1 font-medium">
-                    Rp
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {{-- QUICK NAV --}}
-    <div class="grid grid-cols-2 gap-4">
-
-        <a href="/driver/delivery"
-            class="bg-green-600 hover:bg-green-700 rounded-2xl p-6 text-white text-center transition shadow-lg shadow-green-200 active:scale-95">
-
-            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
-
-                📋
-
-            </div>
-
-            <div class="font-bold text-sm">
-                Delivery Order
-            </div>
-
-            <div class="text-green-100 text-xs mt-1">
-                Lihat daftar perjalanan
-            </div>
-
-        </a>
-
-        <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
-
-            <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
-
-                👤
-
-            </div>
-
-            <div class="font-bold text-sm text-gray-800">
-                Profil Saya
-            </div>
-
-            <div class="text-gray-400 text-xs mt-1">
-                Informasi driver
             </div>
 
         </div>
@@ -239,55 +331,6 @@
     </div>
 
 </div>
-
-{{-- BOTTOM NAV --}}
-<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40">
-
-    <div class="max-w-2xl mx-auto px-4 flex justify-around py-1.5">
-
-        <a href="/driver/dashboard"
-            class="flex flex-col items-center p-2 text-green-600">
-
-            <svg class="w-6 h-6"
-                fill="currentColor"
-                viewBox="0 0 20 20">
-
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-
-            </svg>
-
-            <span class="text-xs font-bold mt-0.5">
-                Home
-            </span>
-
-        </a>
-
-        <a href="/driver/delivery"
-            class="flex flex-col items-center p-2 text-gray-400 hover:text-green-600">
-
-            <svg class="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-
-                <path stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-
-            </svg>
-
-            <span class="text-xs font-medium mt-0.5">
-                Delivery
-            </span>
-
-        </a>
-
-    </div>
-
-</nav>
-
-<div class="h-20"></div>
 
 </body>
 </html>

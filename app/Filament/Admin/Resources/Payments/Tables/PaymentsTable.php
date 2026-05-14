@@ -4,16 +4,10 @@ namespace App\Filament\Admin\Resources\Payments\Tables;
 
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Actions\ActionGroup;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\Action;
-
+use Filament\Actions\ActionGroup;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\PaymentVerifiedMail;
-use App\Mail\PaymentRejectedMail;
 
 class PaymentsTable
 {
@@ -22,89 +16,124 @@ class PaymentsTable
         return $table
             ->columns([
 
-                TextColumn::make('booking')
-                    ->label('Kode Booking')
-                    ->formatStateUsing(fn ($record) =>
-                        ($record->booking?->booking_code ?? '-') .
-                        ' - ' . ($record->booking?->user?->name ?? '-')
-                    )
+                TextColumn::make('booking.booking_code')
+                    ->label('Booking')
                     ->searchable(),
 
                 TextColumn::make('payment_method')
-                    ->label('Metode')
+                    ->label('Metode Pembayaran')
                     ->badge(),
 
-                TextColumn::make('payment_date')
-                    ->label('Tanggal')
-                    ->dateTime('d M Y H:i'),
-
                 TextColumn::make('amount')
-                    ->label('Total')
+                    ->label('Jumlah')
                     ->money('IDR'),
-
-                ImageColumn::make('proof_image')
-                    ->label('Bukti'),
 
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'waiting' => 'warning',
+                        'unpaid' => 'warning',
+                        'waiting_verification' => 'info',
                         'verified' => 'success',
                         'rejected' => 'danger',
+                        'waiting_driver_collection' => 'warning',
+                        'cash_received' => 'info',
+                        'settled' => 'success',
                         default => 'gray',
                     }),
 
+                TextColumn::make('paid_at')
+                    ->label('Dibayar')
+                    ->dateTime(),
+
+                TextColumn::make('verified_at')
+                    ->label('Diverifikasi')
+                    ->dateTime(),
             ])
 
             ->recordActions([
 
                 ActionGroup::make([
-                    ViewAction::make(),
-                    EditAction::make(),
-                    DeleteAction::make(),
-
-                    // ✅ VERIFIED BUTTON
                     Action::make('verify')
-                        ->label('Verified')
+                        ->label('verifikasi')
                         ->color('success')
-                        ->visible(fn ($record) => $record->status === 'waiting')
-                        ->requiresConfirmation()
+                        ->visible(fn ($record) =>
+                            $record->status === 'waiting_verification'
+                        )
                         ->action(function ($record) {
 
                             $record->update([
-                                'status' => 'verified'
+                                'status' => 'verified',
+                                'verified_at' => now(),
                             ]);
 
-                            $record->load('booking.user');
-
-                            if ($record->booking?->user?->email) {
-                                Mail::to($record->booking->user->email)
-                                    ->send(new PaymentVerifiedMail($record));
-                            }
+                            Notification::make()
+                                ->title('Payment verified')
+                                ->success()
+                                ->send();
                         }),
 
-                    // ❌ REJECT BUTTON
                     Action::make('reject')
-                        ->label('Reject')
+                        ->label('ditolak')
                         ->color('danger')
-                        ->visible(fn ($record) => $record->status === 'waiting')
-                        ->requiresConfirmation()
+                        ->visible(fn ($record) =>
+                            $record->status === 'waiting_verification'
+                        )
                         ->action(function ($record) {
 
                             $record->update([
                                 'status' => 'rejected'
                             ]);
 
-                            $record->load('booking.user');
-
-                            if ($record->booking?->user?->email) {
-                                Mail::to($record->booking->user->email)
-                                    ->send(new PaymentRejectedMail($record));
-                            }
+                            Notification::make()
+                                ->title('Payment rejected')
+                                ->danger()
+                                ->send();
                         }),
-                ]),
 
+                    // 💵 DRIVER CONFIRM CASH
+                    Action::make('cash_received')
+                        ->label('cash diterima')
+                        ->color('warning')
+                        ->visible(fn ($record) =>
+                            $record->status === 'waiting_driver_collection'
+                        )
+                        ->action(function ($record) {
+
+                            $record->update([
+                                'status' => 'cash_received',
+                                'driver_received_cash' => true,
+                                'driver_received_at' => now(),
+                            ]);
+
+                            Notification::make()
+                                ->title('Cash received by driver')
+                                ->success()
+                                ->send();
+                        }),
+
+                    // 🏁 SETTLE TO ADMIN
+                    Action::make('settle')
+                        ->label('settle ke admin')
+                        ->color('success')
+                        ->visible(fn ($record) =>
+                            $record->status === 'cash_received'
+                        )
+                        ->action(function ($record) {
+
+                            $record->update([
+                                'status' => 'settled',
+                                'settled_to_admin_at' => now(),
+                            ]);
+
+                            Notification::make()
+                                ->title('Payment settled')
+                                ->label('Pembayaran telah disettle ke admin')
+                                ->success()
+                                ->send();
+                        }),
+
+                ])
             ]);
     }
 }

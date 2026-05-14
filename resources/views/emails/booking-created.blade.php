@@ -43,7 +43,7 @@
             <!-- Customer Info -->
             <div style="background:#f8fafc; border-radius:8px; padding:15px; margin-bottom:15px;">
                 <p style="margin:5px 0;"><b>Nama Customer</b><br>
-                    {{ $booking->user->name ?? '-' }}
+                    {{ $booking->customer_name ?? '-' }}
                 </p>
             </div>
 
@@ -57,7 +57,7 @@
                 <p style="margin:5px 0;"><b>Layanan</b><br>
                     {{-- PRIORITAS: relasi service --}}
                     {{ $booking->service->name 
-                        ?? ($booking->pickup_type ? ucfirst($booking->pickup_type) : '-') }}
+                        ?? ($booking->service_id ? ucfirst($booking->service_id) : '-') }}
                 </p>
 
                 <p style="margin:5px 0;"><b>Tanggal</b><br>

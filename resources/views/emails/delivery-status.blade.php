@@ -23,7 +23,7 @@
 <tr>
 <td>
 
-<p>Halo <b>{{ $deliveryOrder->booking->user->name }}</b>,</p>
+<p>Halo <b>{{ $deliveryOrder->booking->customer_name }}</b>,</p>
 
 <p>Status delivery Anda telah diperbarui.</p>
 

@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Schedules\Pages;
 
 use App\Filament\Admin\Resources\Schedules\ScheduleResource;
 use Filament\Resources\Pages\CreateRecord;
+use App\Models\Booking;
 
 class CreateSchedule extends CreateRecord
 {

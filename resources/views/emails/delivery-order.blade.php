@@ -49,7 +49,7 @@
 
 <tr>
 <td><b>Customer</b></td>
-<td>: {{ $deliveryOrder->booking->user->name }}</td>
+<td>: {{ $deliveryOrder->booking->customer_name ?? '-' }}</td>
 </tr>
 
 <tr>

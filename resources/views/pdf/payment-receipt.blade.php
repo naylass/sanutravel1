@@ -130,7 +130,6 @@ td {
     <th>Deskripsi</th>
     <th>Qty</th>
     <th>Harga</th>
-    <th>Total</th>
 </tr>
 </thead>
 

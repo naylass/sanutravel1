@@ -5,8 +5,8 @@ namespace App\Filament\Admin\Resources\Bookings\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -19,102 +19,95 @@ class BookingsTable
         return $table
             ->columns([
 
+                // 🔢 BOOKING CODE
                 TextColumn::make('booking_code')
                     ->label('Kode Booking')
                     ->searchable()
                     ->copyable()
                     ->weight('bold'),
 
-                TextColumn::make('user.name')
-                    ->label('Customer')
-                    ->searchable()
-                    ->sortable(),
+                // 👤 CUSTOMER
+                TextColumn::make('customer_name')
+                    ->label('Nama Customer')
+                    ->searchable(),
 
                 TextColumn::make('service.name')
                     ->label('Layanan')
                     ->badge(),
 
+                // 📍 PICKUP AREA
+                TextColumn::make('area')
+                    ->label('Area')
+                    ->badge(),
+
+                // 📍 RUTE
                 TextColumn::make('pickup_location')
-                    ->label('Rute')
-                    ->formatStateUsing(fn($record) =>
-                        $record->pickup_location . ' → ' . $record->destination
-                    ),
+                    ->label('Alamat Jemput'),
+
+                TextColumn::make('pickup_date')
+                    ->date()
+                    ->label('Tanggal'),
+
+                TextColumn::make('pickup_time')
+                    ->label('Jam'),
+
+                TextColumn::make('destination')
+                    ->label('Tujuan'),
 
                 TextColumn::make('total_passengers')
                     ->label('Pax')
                     ->badge(),
 
-                TextColumn::make('price')
-                    ->money('IDR'),
+                TextColumn::make('base_price')
+                    ->money('IDR')
+                    ->label('Base'),
+
+                TextColumn::make('pickup_fee')
+                    ->money('IDR')
+                    ->label('Fee'),
+
+                TextColumn::make('total_price')
+                    ->money('IDR')
+                    ->label('Total'),
 
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn($state) => match ($state) {
                         'pending' => 'Menunggu',
                         'confirmed' => 'Dikonfirmasi',
-                        'cancel_request' => 'Menunggu Persetujuan',
+                        'scheduled' => 'Terjadwal',
+                        'on_progress' => 'Perjalanan',
+                        'completed' => 'Selesai',
+                        'cancel_request' => 'Request Cancel',
                         'cancelled' => 'Dibatalkan',
                         default => $state,
                     })
                     ->color(fn($state) => match ($state) {
                         'pending' => 'warning',
                         'confirmed' => 'success',
-                        'cancel_request' => 'info',
+                        'scheduled' => 'info',
+                        'on_progress' => 'primary',
+                        'completed' => 'success',
+                        'cancel_request' => 'warning',
                         'cancelled' => 'danger',
                         default => 'gray',
                     }),
-
             ])
-
             ->recordActions([
 
                 ActionGroup::make([
+
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make()
                         ->visible(fn() => auth()->user()?->hasRole('admin')),
 
-                    Action::make('request_cancel')
-                        ->label('Ajukan Cancel')
-                        ->color('warning')
-                        ->visible(fn($record) =>
-                            auth()->check()
-                            && auth()->id() == $record->user_id
-                            && in_array($record->status, ['pending', 'confirmed'])
-                        )
-                        ->requiresConfirmation()
-                        ->action(function ($record) {
-
-                            $record->update([
-                                'status' => 'cancel_request'
-                            ]);
-
-                            $adminEmail = env('MAIL_FROM_ADDRESS', 'nylaadjah@gmail.com');
-
-                            Mail::raw(
-                                "Customer {$record->user?->name} mengajukan cancel booking {$record->booking_code}",
-                                function ($message) use ($adminEmail) {
-                                    $message->to($adminEmail)
-                                        ->subject('Cancel Request Booking');
-                                }
-                            );
-
-                            Notification::make()
-                                ->title('Cancel diajukan & email terkirim')
-                                ->success()
-                                ->send();
-                        }),
-
-                    // =========================
-                    // ADMIN APPROVE CANCEL
-                    // =========================
-                    Action::make('approve')
-                        ->label('Approve')
+                    Action::make('approve_cancel')
+                        ->label('Approve Cancel')
                         ->color('success')
-                        ->visible(fn($record) =>
-                            auth()->check()
-                            && auth()->user()->hasRole('admin')
-                            && $record->status === 'cancel_request'
+                        ->visible(
+                            fn($record) =>
+                            $record->status === 'cancel_request'
                         )
                         ->requiresConfirmation()
                         ->action(function ($record) {
@@ -123,55 +116,31 @@ class BookingsTable
                                 'status' => 'cancelled'
                             ]);
 
-                            if ($record->user?->email) {
-                                Mail::raw(
-                                    "Booking {$record->booking_code} berhasil dibatalkan.",
-                                    function ($message) use ($record) {
-                                        $message->to($record->user->email)
-                                            ->subject('Cancel Disetujui');
-                                    }
-                                );
-                            }
-
                             Notification::make()
-                                ->title('Cancel disetujui')
+                                ->title('Booking dibatalkan')
                                 ->success()
                                 ->send();
                         }),
 
-                    Action::make('reject')
-                        ->label('Reject')
+                    Action::make('reject_cancel')
+                        ->label('Reject Cancel')
                         ->color('danger')
-                        ->visible(fn($record) =>
-                            auth()->check()
-                            && auth()->user()->hasRole('admin')
-                            && $record->status === 'cancel_request'
+                        ->visible(
+                            fn($record) =>
+                            $record->status === 'cancel_request'
                         )
-                        ->requiresConfirmation()
                         ->action(function ($record) {
 
                             $record->update([
                                 'status' => 'confirmed'
                             ]);
 
-                            if ($record->user?->email) {
-                                Mail::raw(
-                                    "Cancel booking {$record->booking_code} ditolak.",
-                                    function ($message) use ($record) {
-                                        $message->to($record->user->email)
-                                            ->subject('Cancel Ditolak');
-                                    }
-                                );
-                            }
-
                             Notification::make()
                                 ->title('Cancel ditolak')
-                                ->danger()
+                                ->warning()
                                 ->send();
                         }),
-
                 ])
-
             ])
 
             ->striped()

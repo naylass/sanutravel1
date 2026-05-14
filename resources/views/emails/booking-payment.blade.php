@@ -30,7 +30,7 @@
             </h2>
 
             <p style="font-size:14px; color:#374151;">
-                Halo <b>{{ $booking->user->name }}</b>,
+                Halo <b>{{ $booking->customer_name }}</b>,
             </p>
 
             <p style="font-size:14px; color:#374151;">

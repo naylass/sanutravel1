@@ -32,7 +32,7 @@ style="background:#ffffff; margin:30px auto; border-radius:12px; overflow:hidden
                 Pembayaran Berhasil ✅
             </h2>
 
-            <p>Halo <b>{{ $payment->booking->user->name }}</b>,</p>
+            <p>Halo <b>{{ $payment->booking->customer_name ?? 'Customer' }}</b>,</p>
 
             <p style="color:#4b5563;">
                 Pembayaran Anda telah berhasil diverifikasi. Booking Anda sekarang sudah dikonfirmasi.

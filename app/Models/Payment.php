@@ -20,7 +20,13 @@ class Payment extends Model
         'transfer_info',
         'payment_date',
         'amount',
-        'proof_image',
+        'payment_proof',
+        'driver_proof',
+        'paid_at',
+        'verified_at',
+        'driver_received_cash',
+        'driver_received_at',
+        'settled_to_admin_at',
         'status',
     ];
 
@@ -29,23 +35,20 @@ class Payment extends Model
     {
         return $this->belongsTo(Booking::class);
     }
-
     
     public function income()
     {
         return $this->hasOne(Income::class);
     }
 
-    
-
     public function isVerified(): bool
     {
         return $this->status === 'verified';
     }
 
-    public function isWaiting(): bool
+    public function isWaitingVerification(): bool
     {
-        return $this->status === 'waiting';
+        return $this->status === 'waiting_verification';
     }
 
     public function isRejected(): bool
@@ -53,9 +56,18 @@ class Payment extends Model
         return $this->status === 'rejected';
     }
 
-    public static function generateTransactionCode(): string
+    public function isCashWaiting(): bool
     {
-        return 'PAY-' . now()->format('YmdHis') . '-' . rand(100, 999);
+        return $this->status === 'waiting_driver_collection';
     }
 
+    public function isCashReceived(): bool
+    {
+        return $this->status === 'cash_received';
+    }
+
+    public function isSettled(): bool
+    {
+        return $this->status === 'settled';
+    }
 }

@@ -44,7 +44,6 @@ class DeliveryOrder extends Model
         return $this->belongsTo(Schedule::class);
     }
 
-
     public function isPrepared(): bool
     {
         return $this->status === 'prepared';
@@ -62,6 +61,6 @@ class DeliveryOrder extends Model
 
     public function isCancelled(): bool
     {
-        return $this->status === 'cancelled';
+        return $this->status === 'cancel';
     }
 }

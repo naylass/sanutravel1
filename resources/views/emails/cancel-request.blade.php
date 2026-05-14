@@ -43,11 +43,11 @@
                             <!-- Customer Info -->
                             <div style="background:#f8fafc; border-radius:8px; padding:15px; margin-bottom:15px;">
                                 <p style="margin:5px 0;"><b>Nama Customer</b><br>
-                                    {{ $booking->user->name }}
+                                    {{ $booking->customer_name ?? '-' }}
                                 </p>
 
                                 <p style="margin:5px 0;"><b>Email</b><br>
-                                    {{ $booking->user->email }}
+                                    {{ $booking->email }}
                                 </p>
                             </div>
 

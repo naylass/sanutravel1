@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Delivery Order</title>
+    <title>Surat Jalan</title>
 
     <style>
         body {
@@ -87,28 +87,38 @@
 
     <!-- HEADER -->
     <div class="header">
-        <h2>DELIVERY ORDER</h2>
+        <h2>SURAT JALAN</h2>
         <small>No: {{ $deliveryOrder->booking->booking_code }}</small>
     </div>
 
-    <!-- INFO UTAMA -->
+    <!-- INFO CUSTOMER & DRIVER -->
     <div class="section">
         <div class="section-title">Informasi Customer & Driver</div>
 
         <div class="box">
             <table>
+
                 <tr>
                     <td class="label">Customer</td>
-                    <td>: {{ $deliveryOrder->booking->user->name }}</td>
+                    <td>: {{ $deliveryOrder->booking->customer_name ?? '-' }}</td>
                 </tr>
+
+                <!-- ✅ PHONE NUMBER ADDED -->
+                <tr>
+                    <td class="label">No. Telepon</td>
+                    <td>: {{ $deliveryOrder->booking->phone_number ?? '-' }}</td>
+                </tr>
+
                 <tr>
                     <td class="label">Sopir</td>
-                    <td>: {{ $deliveryOrder->driver->name }}</td>
+                    <td>: {{ $deliveryOrder->driver->name ?? '-' }}</td>
                 </tr>
+
                 <tr>
                     <td class="label">Kendaraan</td>
-                    <td>: {{ $deliveryOrder->vehicle->brand }}</td>
+                    <td>: {{ $deliveryOrder->vehicle->brand ?? '-' }}</td>
                 </tr>
+
             </table>
         </div>
     </div>

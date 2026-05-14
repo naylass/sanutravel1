@@ -15,9 +15,7 @@ class ListIncomes extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-
-            // 🔹 tombol create
-            Actions\CreateAction::make(),
+            // Actions\CreateAction::make(),
 
             // 🔥 tombol export
             Actions\Action::make('export')

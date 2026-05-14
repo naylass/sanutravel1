@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class DeliveryOrderController extends Controller
 {
-    // =========================
-    // INDEX (HALAMAN DRIVER)
-    // =========================
+    
     public function index()
     {
         $orders = DeliveryOrder::where('driver_id', Auth::id())
@@ -21,9 +19,6 @@ class DeliveryOrderController extends Controller
         return view('driver.delivery', compact('orders'));
     }
 
-    // =========================
-    // API MY ORDERS
-    // =========================
     public function myOrders()
     {
         $orders = DeliveryOrder::where('driver_id', Auth::id())
@@ -33,9 +28,6 @@ class DeliveryOrderController extends Controller
         return response()->json($orders);
     }
 
-    // =========================
-    // START TRIP
-    // =========================
     public function startTrip($id)
     {
         $order = DeliveryOrder::where('driver_id', Auth::id())
@@ -48,9 +40,6 @@ class DeliveryOrderController extends Controller
         return back()->with('success', 'Perjalanan dimulai');
     }
 
-    // =========================
-    // FINISH TRIP
-    // =========================
     public function finishTrip($id)
     {
         $order = DeliveryOrder::where('driver_id', Auth::id())
@@ -63,9 +52,6 @@ class DeliveryOrderController extends Controller
         return back()->with('success', 'Perjalanan selesai');
     }
 
-    // =========================
-    // STORE ORDER
-    // =========================
     public function store($schedule_id)
     {
         $order = DeliveryOrder::create([
@@ -77,9 +63,6 @@ class DeliveryOrderController extends Controller
         return response()->json($order);
     }
 
-    // =========================
-    // UPDATE STATUS
-    // =========================
     public function updateStatus($id, Request $request)
     {
         $order = DeliveryOrder::where('driver_id', Auth::id())

@@ -2,19 +2,20 @@
 
 namespace App\Filament\Admin\Resources\DeliveryOrders\Tables;
 
-use App\Services\DeliveryOrderService;
-use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Forms\Components\Select;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
+
 use App\Mail\DeliveryStatusUpdatedMail;
 use App\Mail\DeliveryOrderCreatedMail;
+use App\Services\DeliveryOrderService;
+use App\Models\Booking;
 
 class DeliveryOrdersTable
 {
@@ -24,47 +25,73 @@ class DeliveryOrdersTable
             ->columns([
 
                 TextColumn::make('booking.booking_code')
-                    ->label('Kode Booking')
-                    ->searchable(),
+                    ->label(' Kode Booking')
+                    ->searchable()
+                    ->sortable()
+                    ->badge(),
+
+                TextColumn::make('booking.customer_name')
+                    ->label('Nama Customer')
+                    ->searchable()
+                    ->sortable(),
 
                 TextColumn::make('driver.name')
-                    ->label('Driver'),
+                    ->label('Sopir')
+                    ->sortable(),
 
                 TextColumn::make('vehicle.brand')
-                    ->label('Kendaraan'),
+                    ->label('Kendaraan')
+                    ->sortable(),
 
-                TextColumn::make('schedule.departure_date')
-                    ->label('Tanggal'),
+                TextColumn::make('jadwal')
+                    ->label('Jadwal')
+                    ->state(function ($record) {
 
-                TextColumn::make('schedule.departure_time')
-                    ->label('Jam'),
+                        if (!$record->schedule) {
+                            return '-';
+                        }
 
-                TextColumn::make('schedule.pickup_point')
-                    ->label('Pickup Point'),
+                        return Carbon::parse(
+                            $record->schedule->departure_date . ' ' .
+                                $record->schedule->departure_time
+                        )->format('d M Y H:i');
+                    }),
+
+                TextColumn::make('pickup_point')
+                    ->label('Alamat Jemput')
+                    ->limit(30)
+                    ->tooltip(fn($state) => $state),
+
+                TextColumn::make('booking.phone_number')
+                    ->label('No. HP')
+                    ->searchable()
+                    ->copyable(),
 
                 TextColumn::make('destination')
-                    ->label('Tujuan'),
+                    ->label('Tujuan')
+                    ->limit(25),
 
                 TextColumn::make('status')
                     ->badge()
+                    ->formatStateUsing(fn($state) => ucfirst($state))
                     ->color(fn($state) => match ($state) {
                         'prepared' => 'info',
                         'ongoing' => 'warning',
                         'completed' => 'success',
                         'cancelled' => 'danger',
-                        default => 'secondary',
+                        default => 'gray',
                     }),
+
             ])
 
             ->actions([
-                Action::make('change_status')
-                    ->label('Ubah Status')
 
-                    // 👇 hanya driver yang lihat tombol
-                    ->visible(fn() => Auth::user()?->role === 'driver')
+                Action::make('change_status')
+                    ->label('Update Status')
 
                     ->form([
-                        Select::make('status')
+
+                        \Filament\Forms\Components\Select::make('status')
                             ->options([
                                 'prepared' => 'Prepared',
                                 'ongoing' => 'Ongoing',
@@ -72,28 +99,17 @@ class DeliveryOrdersTable
                                 'cancelled' => 'Cancelled',
                             ])
                             ->required(),
+
                     ])
 
                     ->action(function ($record, $data) {
-
-                        // 🔒 HARD SECURITY (WAJIB)
-                        if (Auth::user()?->role !== 'driver') {
-                            abort(403, 'Unauthorized');
-                        }
 
                         $record->update([
                             'status' => $data['status']
                         ]);
 
-                        $record->load(['booking.user', 'driver']);
-
-                        if ($record->booking?->user?->email) {
-                            Mail::to($record->booking->user->email)
-                                ->send(new DeliveryStatusUpdatedMail($record));
-                        }
-
                         Notification::make()
-                            ->title('Status berhasil diupdate')
+                            ->title('Status updated')
                             ->success()
                             ->send();
                     }),
@@ -101,41 +117,42 @@ class DeliveryOrdersTable
             ])
 
             ->headerActions([
+
                 Action::make('generate')
                     ->label('Generate Delivery Order')
-                    ->icon(Heroicon::ClipboardDocument)
+
                     ->form([
-                        Select::make('booking_id')
-                            ->label('Pilih Booking')
 
-                            ->options(function () {
-                                return \App\Models\Booking::query()
-                                    ->whereDoesntHave('deliveryOrder')
-                                    ->with('user')
-                                    ->get()
-                                    ->mapWithKeys(function ($booking) {
-                                        return [
-                                            $booking->id => $booking->booking_code . ' - ' . ($booking->user->name ?? '-'),
-                                        ];
-                                    });
-                            })
-
+                        \Filament\Forms\Components\Select::make('booking_id')
+                            ->label('Select Booking')
                             ->searchable()
+                            ->preload()
+                            ->required()
 
-                            ->getSearchResultsUsing(function (string $search) {
-                                return \App\Models\Booking::query()
+                            // 🔥 INI YANG PENTING
+                            // booking yg SUDAH punya DO tidak muncul lagi
+                            ->options(function () {
+
+                                return Booking::query()
+
                                     ->whereDoesntHave('deliveryOrder')
-                                    ->where('booking_code', 'like', "%{$search}%")
-                                    ->with('user')
+
                                     ->get()
-                                    ->mapWithKeys(function ($booking) {
-                                        return [
-                                            $booking->id => $booking->booking_code . ' - ' . ($booking->user->name ?? '-'),
-                                        ];
-                                    });
-                            })
-                            ->required(),
+
+                                    ->mapWithKeys(fn($b) => [
+
+                                        $b->id =>
+
+                                        $b->booking_code .
+                                            ' - ' .
+                                            $b->customer_name .
+                                            ' - ' .
+                                            $b->destination
+                                    ]);
+                            }),
+
                     ])
+
                     ->action(function (array $data) {
 
                         $delivery = app(DeliveryOrderService::class)
@@ -144,17 +161,21 @@ class DeliveryOrdersTable
                         $delivery->load([
                             'driver',
                             'vehicle',
-                            'booking.user',
+                            'booking',
                             'schedule'
                         ]);
 
+                        // EMAIL DRIVER
                         if ($delivery->driver?->email) {
+
                             Mail::to($delivery->driver->email)
-                                ->send(new DeliveryOrderCreatedMail($delivery));
+                                ->send(
+                                    new DeliveryOrderCreatedMail($delivery)
+                                );
                         }
 
                         Notification::make()
-                            ->title('Delivery Order dibuat & email driver terkirim')
+                            ->title('Delivery Order created')
                             ->success()
                             ->send();
                     }),

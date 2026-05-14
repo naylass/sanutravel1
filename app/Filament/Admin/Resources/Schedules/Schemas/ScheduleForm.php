@@ -5,10 +5,10 @@ namespace App\Filament\Admin\Resources\Schedules\Schemas;
 use App\Models\Booking;
 use App\Models\Vehicle;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Utilities\Set;
@@ -20,178 +20,436 @@ class ScheduleForm
     {
         return $schema->components([
 
+            /*
+            |--------------------------------------------------------------------------
+            | HIDDEN
+            |--------------------------------------------------------------------------
+            */
+
             Hidden::make('base_booking_id'),
 
+            /*
+            |--------------------------------------------------------------------------
+            | BOOKING
+            |--------------------------------------------------------------------------
+            */
+
             Select::make('bookings')
+
                 ->label('Pilih Customer')
+
                 ->multiple()
+
                 ->searchable()
+
                 ->preload()
-                ->live()
-                ->required()
+
                 ->reactive()
-                ->disabled(fn(Get $get) => !$get('vehicle_id'))
 
-                ->options(function (Get $get) {
+                ->relationship(
+                    name: 'bookings',
+                    titleAttribute: 'booking_code'
+                )
 
-                    $baseId = $get('base_booking_id');
-                    $base = $baseId ? Booking::with('service')->find($baseId) : null;
+                ->getOptionLabelFromRecordUsing(
+                    fn($record) =>
 
-                    $query = Booking::with(['user', 'service'])
-                        ->whereNull('schedule_id')
-                        ->orderByDesc('id');
+                    $record->booking_code .
+                        ' | ' .
+                        $record->customer_name .
+                        ' | ' .
+                        strtoupper($record->service?->name ?? '-') .
+                        ' | ' .
+                        $record->destination .
+                        ' | ' .
+                        $record->total_passengers . ' pax'
+                )
 
-                    // 🔥 FILTER BERDASARKAN SERVICE
-                    if ($base) {
-                        $query->where('service_id', $base->service_id)
-                              ->where('pickup_date', $base->pickup_date)
-                              ->where('pickup_time', $base->pickup_time)
-                              ->where('destination', $base->destination);
-                    }
+                ->afterStateUpdated(function (
+                    $state,
+                    Set $set,
+                    Get $get
+                ) {
 
-                    return $query->get()->mapWithKeys(function ($b) {
-                        return [
-                            $b->id =>
-                                $b->booking_code
-                                . ' | ' . ($b->user?->name ?? '-')
-                                . ' | ' . strtoupper($b->service?->name ?? '-') // ✅ FIX
-                                . ' | ' . date('d-m', strtotime($b->pickup_date))
-                                . ' ' . substr($b->pickup_time, 0, 5)
-                                . ' | ' . $b->destination
-                                . ' (' . $b->total_passengers . ' org)'
-                        ];
-                    })->toArray();
-                })
-
-                ->afterStateUpdated(function ($state, Set $set, Get $get) {
-
-                    if (!$get('vehicle_id')) {
-                        Notification::make()
-                            ->title('Pilih kendaraan dulu')
-                            ->warning()
-                            ->send();
-
-                        $set('bookings', []);
+                    if (!$state || count($state) === 0) {
                         return;
                     }
 
-                    if (empty($state)) {
-                        $set('base_booking_id', null);
+                    $bookings = Booking::with('service')
+                        ->whereIn('id', $state)
+                        ->get();
+
+                    $base = $bookings->first();
+
+                    if (!$base) {
                         return;
                     }
 
-                    // 🔥 SET BASE
-                    if (!$get('base_booking_id')) {
-                        $set('base_booking_id', $state[0]);
-                    }
+                    $serviceName =
+                        strtolower($base->service?->name ?? '');
 
-                    $baseId = $get('base_booking_id');
-                    $base = Booking::with('service')->find($baseId);
-                    $bookings = Booking::with('service')->whereIn('id', $state)->get();
+                    /*
+                    |--------------------------------------------------------------------------
+                    | EKSKLUSIF
+                    |--------------------------------------------------------------------------
+                    */
 
-                    if (!$base) return;
+                    if ($serviceName === 'eksklusif') {
 
-                    $serviceName = strtolower($base->service->name ?? '');
+                        if (count($bookings) > 1) {
 
-                    // 🔴 EKSKLUSIF
-                    if ($serviceName === 'eksklusif' && count($state) > 1) {
-                        Notification::make()
-                            ->title('Eksklusif tidak bisa digabung')
-                            ->danger()
-                            ->send();
-
-                        $set('bookings', [$baseId]);
-                        return;
-                    }
-
-                    // 🟢 REGULER
-                    if ($serviceName === 'reguler') {
-
-                        if ($bookings->where('pickup_date', '!=', $base->pickup_date)->count()) {
-                            Notification::make()->title('Tanggal beda')->danger()->send();
-                            $set('bookings', [$baseId]);
-                            return;
-                        }
-
-                        if ($bookings->where('pickup_time', '!=', $base->pickup_time)->count()) {
-                            Notification::make()->title('Jam beda')->danger()->send();
-                            $set('bookings', [$baseId]);
-                            return;
-                        }
-
-                        if ($bookings->where('destination', '!=', $base->destination)->count()) {
-                            Notification::make()->title('Tujuan beda')->danger()->send();
-                            $set('bookings', [$baseId]);
-                            return;
-                        }
-                    }
-
-                    $set('departure_date', $base->pickup_date);
-                    $set('departure_time', $base->pickup_time);
-                    $set('destination', $base->destination);
-
-                    $set(
-                        'pickup_point',
-                        $bookings->pluck('pickup_location')->unique()->join(', ')
-                    );
-
-                    $vehicle = Vehicle::find($get('vehicle_id'));
-
-                    if ($vehicle) {
-                        $total = $bookings->sum('total_passengers');
-
-                        if ($total > $vehicle->capacity) {
                             Notification::make()
-                                ->title('Kapasitas penuh')
-                                ->body("Total: $total / {$vehicle->capacity}")
+                                ->title('Booking Eksklusif tidak bisa digabung')
+                                ->body('1 booking eksklusif = 1 schedule')
                                 ->danger()
                                 ->send();
 
-                            $set('bookings', [$baseId]);
+                            $set('bookings', [$base->id]);
+
                             return;
+                        }
+
+                        $set(
+                            'departure_date',
+                            $base->pickup_date
+                        );
+
+                        $set(
+                            'departure_time',
+                            $base->pickup_time
+                        );
+
+                        $set(
+                            'destination',
+                            $base->destination
+                        );
+
+                        $set(
+                            'pickup_location',
+                            $base->pickup_location
+                        );
+
+                        return;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | REGULER VALIDATION
+                    |--------------------------------------------------------------------------
+                    */
+
+                    foreach ($bookings as $booking) {
+
+                        $bookingService =
+                            strtolower(
+                                $booking->service?->name ?? ''
+                            );
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | TIDAK BOLEH CAMPUR EKSKLUSIF
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if ($bookingService !== 'reguler') {
+
+                            Notification::make()
+                                ->title('Reguler tidak boleh dicampur eksklusif')
+                                ->danger()
+                                ->send();
+
+                            $set('bookings', [$base->id]);
+
+                            return;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | TANGGAL HARUS SAMA
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            $booking->pickup_date !=
+                            $base->pickup_date
+                        ) {
+
+                            Notification::make()
+                                ->title('Tanggal keberangkatan harus sama')
+                                ->danger()
+                                ->send();
+
+                            $set('bookings', [$base->id]);
+
+                            return;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | JAM HARUS SAMA
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            $booking->pickup_time !=
+                            $base->pickup_time
+                        ) {
+
+                            Notification::make()
+                                ->title('Jam keberangkatan harus sama')
+                                ->danger()
+                                ->send();
+
+                            $set('bookings', [$base->id]);
+
+                            return;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | TUJUAN HARUS SAMA
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            strtolower($booking->destination)
+                            != strtolower($base->destination)
+                        ) {
+
+                            Notification::make()
+                                ->title('Tujuan harus sama')
+                                ->danger()
+                                ->send();
+
+                            $set('bookings', [$base->id]);
+
+                            return;
+                        }
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | VALIDASI KAPASITAS
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $vehicle =
+                        Vehicle::find($get('vehicle_id'));
+
+                    if ($vehicle) {
+
+                        $totalPassengers =
+                            $bookings->sum('total_passengers');
+
+                        if (
+                            $totalPassengers >
+                            $vehicle->capacity
+                        ) {
+
+                            Notification::make()
+                                ->title('Kapasitas kendaraan penuh')
+                                ->body(
+                                    'Total penumpang: ' .
+                                        $totalPassengers .
+                                        ' / ' .
+                                        $vehicle->capacity
+                                )
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | AUTO FILL
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $set(
+                        'departure_date',
+                        $base->pickup_date
+                    );
+
+                    $set(
+                        'departure_time',
+                        $base->pickup_time
+                    );
+
+                    $set(
+                        'destination',
+                        $base->destination
+                    );
+
+                    $set(
+                        'pickup_location',
+                        $bookings
+                            ->pluck('pickup_location')
+                            ->unique()
+                            ->implode(', ')
+                    );
+                }),
+
+            /*
+            |--------------------------------------------------------------------------
+            | VEHICLE
+            |--------------------------------------------------------------------------
+            */
+
+            Select::make('vehicle_id')
+
+                ->label('Kendaraan')
+
+                ->relationship('vehicle', 'brand')
+
+                ->searchable()
+
+                ->preload()
+
+                ->reactive()
+
+                ->required()
+
+                ->afterStateUpdated(function (
+                    $state,
+                    Set $set,
+                    Get $get
+                ) {
+
+                    $vehicle =
+                        Vehicle::with('driver')
+                        ->find($state);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | AUTO FILL DRIVER
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($vehicle) {
+
+                        $set(
+                            'driver_id',
+                            $vehicle->driver_id
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | VALIDASI KAPASITAS SAAT GANTI MOBIL
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $bookingIds =
+                        $get('bookings') ?? [];
+
+                    $bookings = Booking::whereIn(
+                        'id',
+                        $bookingIds
+                    )->get();
+
+                    if (
+                        $vehicle &&
+                        $bookings->count()
+                    ) {
+
+                        $totalPassengers =
+                            $bookings->sum(
+                                'total_passengers'
+                            );
+
+                        if (
+                            $totalPassengers >
+                            $vehicle->capacity
+                        ) {
+
+                            Notification::make()
+                                ->title('Kapasitas kendaraan tidak cukup')
+                                ->body(
+                                    'Total penumpang: ' .
+                                        $totalPassengers .
+                                        ' / ' .
+                                        $vehicle->capacity
+                                )
+                                ->danger()
+                                ->send();
                         }
                     }
                 }),
 
-            Select::make('vehicle_id')
-                ->label('Kendaraan')
-                ->relationship('vehicle', 'brand')
-                ->required()
-                ->reactive()
-                ->afterStateUpdated(function ($state, Set $set) {
-                    $vehicle = Vehicle::find($state);
-                    if ($vehicle) {
-                        $set('driver_id', $vehicle->driver_id);
-                    }
-                }),
+            /*
+            |--------------------------------------------------------------------------
+            | DRIVER
+            |--------------------------------------------------------------------------
+            */
 
             Select::make('driver_id')
+
                 ->label('Sopir')
+
                 ->relationship('driver', 'name')
+
+                ->searchable()
+
                 ->disabled()
+
                 ->dehydrated()
+
                 ->required(),
 
-            // 📅
+            /*
+            |--------------------------------------------------------------------------
+            | DATE
+            |--------------------------------------------------------------------------
+            */
+
             DatePicker::make('departure_date')
-                ->label('Tanggal Keberangkatan')
+
+                ->label('Tanggal Berangkat')
+                ->readOnly()
+
                 ->required(),
 
-            // ⏰
+            /*
+            |--------------------------------------------------------------------------
+            | TIME
+            |--------------------------------------------------------------------------
+            */
+
             TimePicker::make('departure_time')
-                ->label('Waktu Keberangkatan')
-                ->required(),
 
-            // 📍
-            TextInput::make('pickup_point')
-                ->label('Titik Penjemputan')
+                ->label('Jam Berangkat')
                 ->readOnly()
+
                 ->required(),
 
-            // 🎯
+            /*
+            |--------------------------------------------------------------------------
+            | PICKUP
+            |--------------------------------------------------------------------------
+            */
+
+            TextInput::make('pickup_location')
+
+                ->label('Lokasi Penjemputan')
+
+                ->readOnly()
+
+                ->required(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | DESTINATION
+            |--------------------------------------------------------------------------
+            */
+
             TextInput::make('destination')
+
                 ->label('Tujuan')
+
                 ->readOnly()
+
                 ->required(),
         ]);
     }

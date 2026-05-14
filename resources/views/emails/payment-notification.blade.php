@@ -43,7 +43,7 @@
             <!-- Customer Info -->
             <div style="background:#f8fafc; border-radius:8px; padding:15px; margin-bottom:15px;">
                 <p style="margin:5px 0;"><b>Nama Customer</b><br>
-                    {{ $payment->booking->user->name ?? '-' }}
+                    {{ $payment->booking->customer_name ?? '-' }}
                 </p>
             </div>
 
@@ -79,14 +79,14 @@
             </div>
 
             <!-- Proof -->
-            @if($payment->proof_image)
+            @if($payment->payment_proof)
                 <div style="background:#fef9c3; border-left:4px solid #facc15; padding:12px; border-radius:6px; margin-bottom:15px;">
                     <b>Bukti Transfer Tersedia</b><br>
                     Silakan cek bukti pembayaran dari customer.
                 </div>
 
                 <div style="text-align:center; margin:15px 0;">
-                    <a href="{{ asset('storage/'.$payment->proof_image) }}" 
+                    <a href="{{ asset('storage/'.$payment->payment_proof) }}" 
                        target="_blank"
                        style="background:#2563eb; color:#ffffff; padding:10px 18px; text-decoration:none; border-radius:6px; font-size:14px;">
                         Lihat Bukti Transfer
