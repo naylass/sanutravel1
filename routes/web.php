@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\File;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DeliveryOrderController;
@@ -33,6 +35,22 @@ Route::get('/payment/check', [PaymentController::class, 'check'])
 
 Route::post('/payment/{id}/upload', [PaymentController::class, 'upload'])
     ->name('payment.upload');
+
+Route::get('/payment-proof/{filename}', function ($filename) {
+
+    $path = storage_path('app/public/payment-proofs/' . $filename);
+
+    if (!File::exists($path)) {
+        abort(404);
+    }
+
+    return Response::file($path);
+});
+
+Route::get(
+    '/driver/cash-success/{id}',
+    [PaymentController::class, 'cashSuccess']
+)->name('driver.cash.success');
 
 Route::post('/payment/{id}/verify', [PaymentController::class, 'verify'])
     ->name('payment.verify');

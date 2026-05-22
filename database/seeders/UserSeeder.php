@@ -36,23 +36,30 @@ class UserSeeder extends Seeder
                 'role' => 'driver',
             ],
             [
-                'name' => 'Atika',
-                'email' => 'atika@gmail.com',
-                'password' => Hash::make('atika123'),
-                'role' => 'customer',
+                'name' => 'Suhada',
+                'email' => 'nizaraufar1611@gmail.com',
+                'password' => Hash::make('admin123'),
+                'role' => 'driver',
             ],
             [
-                'name' => 'Anjeng',
-                'email' => 'naylajk101@gmail.com',
-                'password' => Hash::make('anjeng123'),
-                'role' => 'customer',
+                'name' => 'Defri',
+                'email' => 'defri123@gmail.com',
+                'password' => Hash::make('admin123'),
+                'role' => 'driver',
             ],
             [
-                'name' => 'Nazwa',
-                'email' => 'nylsjdh18@gmail.com',
-                'password' => Hash::make('nazwa123'),
-                'role' => 'customer',
+                'name' => 'Danang',
+                'email' => 'danang123@gmail.com',
+                'password' => Hash::make('admin123'),
+                'role' => 'driver',
             ],
+            [
+                'name' => 'Ujang',
+                'email' => 'ujang123@gmail.com',
+                'password' => Hash::make('admin123'),
+                'role' => 'driver',
+            ],
+
         ];
 
         foreach ($users as $data) {

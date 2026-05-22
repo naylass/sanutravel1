@@ -2,49 +2,118 @@
 
 namespace App\Filament\Admin\Resources\DeliveryOrders\Tables;
 
+use Carbon\Carbon;
+use App\Models\Booking;
+use Filament\Tables\Table;
 use Filament\Actions\Action;
+use App\Services\DeliveryOrderService;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Table;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Auth;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Mail;
-use Carbon\Carbon;
-
-use App\Mail\DeliveryStatusUpdatedMail;
 use App\Mail\DeliveryOrderCreatedMail;
-use App\Services\DeliveryOrderService;
-use App\Models\Booking;
 
 class DeliveryOrdersTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+
             ->columns([
 
-                TextColumn::make('booking.booking_code')
-                    ->label(' Kode Booking')
-                    ->searchable()
-                    ->sortable()
-                    ->badge(),
+                /*
+                |--------------------------------------------------------------------------
+                | BOOKING
+                |--------------------------------------------------------------------------
+                */
 
-                TextColumn::make('booking.customer_name')
-                    ->label('Nama Customer')
+                TextColumn::make('booking.booking_code')
+
+                    ->label('Booking')
+
                     ->searchable()
-                    ->sortable(),
+
+                    ->sortable()
+
+                    ->badge()
+
+                    ->color('primary')
+
+                    ->weight('bold')
+
+                    ->icon('heroicon-o-ticket')
+
+                    ->description(
+                        fn($record) =>
+                        $record->booking?->customer_name ?? '-'
+                    ),
+
+                /*
+                |--------------------------------------------------------------------------
+                | DRIVER
+                |--------------------------------------------------------------------------
+                */
 
                 TextColumn::make('driver.name')
+
                     ->label('Sopir')
-                    ->sortable(),
+
+                    ->sortable()
+
+                    ->searchable()
+
+                    ->badge()
+
+                    ->color('success')
+
+                    ->icon('heroicon-o-user')
+
+                    ->description(
+                        fn($record) =>
+                        $record->driver?->phone_number ?? '-'
+                    ),
+
+                /*
+                |--------------------------------------------------------------------------
+                | VEHICLE
+                |--------------------------------------------------------------------------
+                */
 
                 TextColumn::make('vehicle.brand')
-                    ->label('Kendaraan')
-                    ->sortable(),
 
-                TextColumn::make('jadwal')
+                    ->label('Kendaraan')
+
+                    ->sortable()
+
+                    ->searchable()
+
+                    ->icon('heroicon-o-truck')
+
+                    ->weight('semiBold')
+
+                    ->description(
+                        fn($record) =>
+                        'Plat: ' .
+                            ($record->vehicle?->plate_number ?? '-')
+                    ),
+
+                /*
+                |--------------------------------------------------------------------------
+                | SCHEDULE
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('schedule')
+
                     ->label('Jadwal')
+
+                    ->badge()
+
+                    ->color('info')
+
+                    ->icon('heroicon-o-clock')
+
                     ->state(function ($record) {
 
                         if (!$record->schedule) {
@@ -52,85 +121,178 @@ class DeliveryOrdersTable
                         }
 
                         return Carbon::parse(
-                            $record->schedule->departure_date . ' ' .
+                            $record->schedule->departure_date .
+                                ' ' .
                                 $record->schedule->departure_time
-                        )->format('d M Y H:i');
+                        )->translatedFormat('d M Y • H:i');
                     }),
 
+                /*
+                |--------------------------------------------------------------------------
+                | PICKUP
+                |--------------------------------------------------------------------------
+                */
+
                 TextColumn::make('pickup_point')
-                    ->label('Alamat Jemput')
-                    ->limit(30)
+
+                    ->label('Penjemputan')
+
+                    ->icon('heroicon-o-map-pin')
+
+                    ->wrap()
+
+                    ->limit(40)
+
                     ->tooltip(fn($state) => $state),
 
-                TextColumn::make('booking.phone_number')
-                    ->label('No. HP')
-                    ->searchable()
-                    ->copyable(),
+                /*
+                |--------------------------------------------------------------------------
+                | DESTINATION
+                |--------------------------------------------------------------------------
+                */
 
                 TextColumn::make('destination')
+
                     ->label('Tujuan')
-                    ->limit(25),
+
+                    ->icon('heroicon-o-map')
+
+                    ->badge()
+
+                    ->color('gray')
+
+                    ->limit(30)
+
+                    ->tooltip(fn($state) => $state),
+
+                /*
+                |--------------------------------------------------------------------------
+                | PHONE
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('booking.phone_number')
+
+                    ->label('No HP')
+
+                    ->icon('heroicon-o-phone')
+
+                    ->copyable()
+
+                    ->copyMessage('Nomor berhasil disalin')
+
+                    ->searchable()
+
+                    ->badge()
+
+                    ->color('warning'),
+
+                /*
+                |--------------------------------------------------------------------------
+                | STATUS
+                |--------------------------------------------------------------------------
+                */
 
                 TextColumn::make('status')
+
+                    ->label('Status')
+
                     ->badge()
-                    ->formatStateUsing(fn($state) => ucfirst($state))
+
+                    ->icon(fn($state) => match ($state) {
+
+                        'prepared' => 'heroicon-o-clock',
+
+                        'ongoing' => 'heroicon-o-truck',
+
+                        'completed' => 'heroicon-o-check-circle',
+
+                        'cancelled' => 'heroicon-o-x-circle',
+
+                        default => 'heroicon-o-information-circle',
+                    })
+
+                    ->formatStateUsing(fn($state) => match ($state) {
+
+                        'prepared' => 'Prepared',
+
+                        'ongoing' => 'Perjalanan',
+
+                        'completed' => 'Selesai',
+
+                        'cancelled' => 'Dibatalkan',
+
+                        default => ucfirst($state),
+                    })
+
                     ->color(fn($state) => match ($state) {
+
                         'prepared' => 'info',
+
                         'ongoing' => 'warning',
+
                         'completed' => 'success',
+
                         'cancelled' => 'danger',
+
                         default => 'gray',
                     }),
 
+                /*
+                |--------------------------------------------------------------------------
+                | CREATED
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('created_at')
+
+                    ->label('Dibuat')
+
+                    ->since()
+
+                    ->sortable()
+
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
 
-            ->actions([
+            /*
+            |--------------------------------------------------------------------------
+            | ADMIN TIDAK BISA UPDATE STATUS
+            |--------------------------------------------------------------------------
+            */
 
-                Action::make('change_status')
-                    ->label('Update Status')
+            ->actions([])
 
-                    ->form([
-
-                        \Filament\Forms\Components\Select::make('status')
-                            ->options([
-                                'prepared' => 'Prepared',
-                                'ongoing' => 'Ongoing',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->required(),
-
-                    ])
-
-                    ->action(function ($record, $data) {
-
-                        $record->update([
-                            'status' => $data['status']
-                        ]);
-
-                        Notification::make()
-                            ->title('Status updated')
-                            ->success()
-                            ->send();
-                    }),
-
-            ])
+            /*
+            |--------------------------------------------------------------------------
+            | HEADER ACTION
+            |--------------------------------------------------------------------------
+            */
 
             ->headerActions([
 
                 Action::make('generate')
+
                     ->label('Generate Delivery Order')
+
+                    ->icon('heroicon-o-plus-circle')
+
+                    ->color('success')
+
+                    ->modalWidth('lg')
 
                     ->form([
 
                         \Filament\Forms\Components\Select::make('booking_id')
-                            ->label('Select Booking')
+
+                            ->label('Pilih Booking')
+
                             ->searchable()
+
                             ->preload()
+
                             ->required()
 
-                            // 🔥 INI YANG PENTING
-                            // booking yg SUDAH punya DO tidak muncul lagi
                             ->options(function () {
 
                                 return Booking::query()
@@ -144,9 +306,9 @@ class DeliveryOrdersTable
                                         $b->id =>
 
                                         $b->booking_code .
-                                            ' - ' .
+                                            ' • ' .
                                             $b->customer_name .
-                                            ' - ' .
+                                            ' • ' .
                                             $b->destination
                                     ]);
                             }),
@@ -155,8 +317,9 @@ class DeliveryOrdersTable
 
                     ->action(function (array $data) {
 
-                        $delivery = app(DeliveryOrderService::class)
-                            ->generate($data);
+                        $delivery = app(
+                            DeliveryOrderService::class
+                        )->generate($data);
 
                         $delivery->load([
                             'driver',
@@ -165,27 +328,66 @@ class DeliveryOrdersTable
                             'schedule'
                         ]);
 
-                        // EMAIL DRIVER
+                        /*
+                        |--------------------------------------------------------------------------
+                        | EMAIL DRIVER
+                        |--------------------------------------------------------------------------
+                        */
+
                         if ($delivery->driver?->email) {
 
-                            Mail::to($delivery->driver->email)
-                                ->send(
-                                    new DeliveryOrderCreatedMail($delivery)
-                                );
+                            Mail::to(
+                                $delivery->driver->email
+                            )->send(
+                                new DeliveryOrderCreatedMail($delivery)
+                            );
                         }
 
                         Notification::make()
-                            ->title('Delivery Order created')
+
+                            ->title('Delivery Order berhasil dibuat')
+
                             ->success()
+
                             ->send();
                     }),
 
             ])
 
+            /*
+            |--------------------------------------------------------------------------
+            | BULK ACTION
+            |--------------------------------------------------------------------------
+            */
+
             ->bulkActions([
+
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+
+                    DeleteBulkAction::make()
+                        ->label('Hapus Data'),
+
                 ]),
-            ]);
+            ])
+
+            /*
+            |--------------------------------------------------------------------------
+            | STYLE
+            |--------------------------------------------------------------------------
+            */
+
+            ->striped()
+
+            ->defaultSort('created_at', 'desc')
+
+            ->paginated([10, 25, 50])
+
+            ->emptyStateHeading(
+                'Belum ada Delivery Order'
+            )
+
+            ->emptyStateDescription(
+                'Delivery order akan muncul di sini.'
+            );
     }
 }

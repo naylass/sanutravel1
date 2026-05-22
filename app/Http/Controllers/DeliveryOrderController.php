@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\DriverAssignedCashMail;
 use App\Models\DeliveryOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 
 class DeliveryOrderController extends Controller
 {
-    
+
     public function index()
     {
         $orders = DeliveryOrder::where('driver_id', Auth::id())
@@ -60,8 +62,41 @@ class DeliveryOrderController extends Controller
             'status' => 'pending',
         ]);
 
+        $order->load([
+            'booking.payment',
+            'driver',
+            'schedule'
+        ]);
+
+        $booking = $order->booking;
+
+        if (
+            $booking &&
+            $booking->payment &&
+            $booking->payment->payment_method === 'cash'
+        ) {
+
+            try {
+
+                if (!empty($order->driver?->email)) {
+
+                    Mail::to($order->driver->email)
+                        ->send(
+                            new DriverAssignedCashMail($booking)
+                        );
+                }
+            } catch (\Exception $e) {
+
+                logger('EMAIL DRIVER CASH ERROR: ' . $e->getMessage(), [
+                    'order_id' => $order->id,
+                    'driver_id' => $order->driver_id ?? null
+                ]);
+            }
+        }
+
         return response()->json($order);
     }
+
 
     public function updateStatus($id, Request $request)
     {

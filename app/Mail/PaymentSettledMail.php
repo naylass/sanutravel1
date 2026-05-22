@@ -7,27 +7,23 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class PaymentRejectedMail extends Mailable
+class PaymentSettledMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $payment;
-    public $booking;
 
-    public function __construct(Payment $payment)
+    public function __construct($payment)
     {
         $this->payment = $payment;
-        $this->booking = $payment->booking;
     }
 
     public function build()
     {
         return $this->subject(
-                'Pembayaran Ditolak'
-            )
-
-            ->view(
-                'emails.payment-rejected'
-            );
+            'Pembayaran Selesai'
+        )->view(
+            'emails.payment-settled'
+        );
     }
 }

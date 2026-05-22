@@ -2,143 +2,372 @@
 
 namespace App\Filament\Admin\Resources\Schedules\Tables;
 
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\BadgeColumn;
+use Carbon\Carbon;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
-use Illuminate\Support\Str;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class SchedulesTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+
             ->columns([
+
+                /*
+                |--------------------------------------------------------------------------
+                | DRIVER
+                |--------------------------------------------------------------------------
+                */
+
                 TextColumn::make('driver.name')
-                    ->label('Nama Sopir')
+
+                    ->label('Sopir')
+
                     ->searchable()
+
                     ->sortable()
+
                     ->icon('heroicon-o-user')
-                    ->weight('bold'),
+
+                    ->weight('bold')
+
+                    ->color('primary')
+
+                    ->badge(),
+
+                /*
+                |--------------------------------------------------------------------------
+                | VEHICLE
+                |--------------------------------------------------------------------------
+                */
 
                 TextColumn::make('vehicle.brand')
-                    ->label('Kendaraan')
-                    ->searchable()
-                    ->sortable()
-                    ->icon('heroicon-o-truck'),
 
-                TextColumn::make('bookings.booking_code')
+                    ->label('Kendaraan')
+
+                    ->searchable()
+
+                    ->sortable()
+
+                    ->icon('heroicon-o-truck')
+
+                    ->weight('semiBold')
+
+                    ->description(fn ($record) =>
+                        'Plat: ' .
+                        ($record->vehicle?->plate_number ?? '-')
+                    ),
+
+                /*
+                |--------------------------------------------------------------------------
+                | BOOKING CODE
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('booking_codes')
+
                     ->label('Kode Booking')
+
                     ->badge()
-                    ->formatStateUsing(function ($record) {
+
+                    ->color('gray')
+
+                    ->searchable()
+
+                    ->wrap()
+
+                    ->state(function ($record) {
 
                         return $record->bookings
                             ->pluck('booking_code')
                             ->implode(', ');
                     }),
 
-                TextColumn::make('bookings.customer_name')
-                    ->label('Nama Pelanggan')
-                    ->icon('heroicon-o-users')
-                    ->formatStateUsing(function ($record) {
+                /*
+                |--------------------------------------------------------------------------
+                | CUSTOMER
+                |--------------------------------------------------------------------------
+                */
 
-                        $names = $record->bookings
+                TextColumn::make('customers')
+
+                    ->label('Customer')
+
+                    ->icon('heroicon-o-users')
+
+                    ->wrap()
+
+                    ->searchable()
+
+                    ->state(function ($record) {
+
+                        $customers = $record->bookings
                             ->pluck('customer_name')
                             ->filter()
                             ->unique();
 
-                        if ($record->bookings->count() === 1) {
-                            return $names->first() ?? '-';
-                        }
-
-                        return $names->implode(', ');
+                        return $customers->implode(', ');
                     })
-                    ->wrap(),
 
-                TextColumn::make('bookings.phone_number')
-                    ->label('No HP')
-                    ->icon('heroicon-o-phone')
-                    ->formatStateUsing(function ($record) {
+                    ->description(function ($record) {
 
-                        return $record->bookings
+                        $phones = $record->bookings
                             ->pluck('phone_number')
                             ->filter()
                             ->unique()
                             ->implode(', ');
+
+                        return $phones ?: '-';
                     }),
 
-                TextColumn::make('pickup_location')
-                    ->label('Rute')
-                    ->icon('heroicon-o-map')
-                    ->formatStateUsing(
-                        fn($record) =>
-                        $record->pickup_location . ' → ' . $record->destination
+                /*
+                |--------------------------------------------------------------------------
+                | ROUTE
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('route')
+
+                    ->label('Rute Perjalanan')
+
+                    ->icon('heroicon-o-map-pin')
+
+                    ->wrap()
+
+                    ->state(fn ($record) =>
+
+                        $record->pickup_location .
+                        ' → ' .
+                        $record->destination
                     )
-                    ->wrap(),
 
-                TextColumn::make('departure_date')
+                    ->description(function ($record) {
+
+                        return 'Tujuan: ' .
+                            ($record->destination ?? '-');
+                    }),
+
+                /*
+                |--------------------------------------------------------------------------
+                | SCHEDULE
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('schedule')
+
                     ->label('Jadwal')
+
                     ->icon('heroicon-o-clock')
-                    ->formatStateUsing(
-                        fn($record) =>
-                        \Carbon\Carbon::parse(
-                            $record->departure_date . ' ' . $record->departure_time
-                        )->format('d M Y H:i')
-                    ),
 
-                TextColumn::make('bookings.total_passengers')
-                    ->label('Pax')
                     ->badge()
+
                     ->color('info')
-                    ->formatStateUsing(
-                        fn($record) =>
-                        $record->bookings->sum('total_passengers') . ' orang'
-                    ),
 
-                TextColumn::make('type')
-                    ->label('Tipe')
+                    ->state(function ($record) {
+
+                        return Carbon::parse(
+                            $record->departure_date .
+                                ' ' .
+                                $record->departure_time
+                        )->translatedFormat('d M Y • H:i');
+                    }),
+
+                /*
+                |--------------------------------------------------------------------------
+                | PASSENGER
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('passengers')
+
+                    ->label('Penumpang')
+
                     ->badge()
-                    ->formatStateUsing(function ($record) {
 
-                        $booking = $record->bookings->first();
+                    ->color('primary')
 
-                        return ucfirst(
-                            strtolower(
-                                $booking?->service?->name ?? '-'
-                            )
-                        );
+                    ->icon('heroicon-o-user-group')
+
+                    ->state(function ($record) {
+
+                        $totalPassengers = $record->bookings
+                            ->sum('total_passengers');
+
+                        return $totalPassengers . ' Orang';
+                    }),
+
+                /*
+                |--------------------------------------------------------------------------
+                | REMAINING SEAT
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('remaining_seat')
+
+                    ->label('Sisa Kursi')
+
+                    ->badge()
+
+                    ->state(function ($record) {
+
+                        $capacity =
+                            $record->vehicle?->capacity ?? 0;
+
+                        $used =
+                            $record->bookings
+                            ->sum('total_passengers');
+
+                        $remaining =
+                            $capacity - $used;
+
+                        return $remaining .
+                            ' / ' .
+                            $capacity;
                     })
+
                     ->color(function ($record) {
 
-                        $booking = $record->bookings->first();
+                        $capacity =
+                            $record->vehicle?->capacity ?? 0;
+
+                        $used =
+                            $record->bookings
+                            ->sum('total_passengers');
+
+                        $remaining =
+                            $capacity - $used;
+
+                        if ($remaining <= 0) {
+                            return 'danger';
+                        }
+
+                        if ($remaining <= 2) {
+                            return 'warning';
+                        }
+
+                        return 'success';
+                    }),
+
+                /*
+                |--------------------------------------------------------------------------
+                | TYPE
+                |--------------------------------------------------------------------------
+                */
+
+                TextColumn::make('type')
+
+                    ->label('Tipe')
+
+                    ->badge()
+
+                    ->icon(function ($record) {
 
                         $service = strtolower(
-                            $booking?->service?->name ?? ''
+                            $record->bookings
+                                ->first()?->service?->name ?? ''
                         );
 
-                        return $service === 'reguler'
-                            ? 'success'
-                            : 'warning';
+                        return $service === 'eksklusif'
+                            ? 'heroicon-o-star'
+                            : 'heroicon-o-users';
+                    })
+
+                    ->state(function ($record) {
+
+                        $service = strtolower(
+                            $record->bookings
+                                ->first()?->service?->name ?? ''
+                        );
+
+                        return ucfirst($service);
+                    })
+
+                    ->color(function ($record) {
+
+                        $service = strtolower(
+                            $record->bookings
+                                ->first()?->service?->name ?? ''
+                        );
+
+                        return $service === 'eksklusif'
+                            ? 'warning'
+                            : 'success';
                     }),
+
+                /*
+                |--------------------------------------------------------------------------
+                | CREATED
+                |--------------------------------------------------------------------------
+                */
+
                 TextColumn::make('created_at')
+
                     ->label('Dibuat')
-                    ->dateTime()
+
+                    ->since()
+
+                    ->sortable()
+
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
 
             ->recordActions([
+
                 ActionGroup::make([
-                    ViewAction::make(),
-                    EditAction::make(),
-                    DeleteAction::make(),
+
+                    ViewAction::make()
+
+                        ->color('info'),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | EDIT
+                    |--------------------------------------------------------------------------
+                    */
+
+                    EditAction::make()
+
+                        ->color('warning')
+
+                        ->visible(function ($record) {
+
+                            $service = strtolower(
+                                $record->bookings
+                                    ->first()?->service?->name ?? ''
+                            );
+
+                            // Eksklusif dikunci
+                            return $service !== 'eksklusif';
+                        }),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | DELETE
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DeleteAction::make()
+
+                        ->color('danger'),
+
                 ])
             ])
 
             ->striped()
+
+            ->defaultSort('created_at', 'desc')
+
             ->paginated([10, 25, 50])
-            ->defaultSort('created_at', 'desc');
+
+            ->emptyStateHeading('Belum ada schedule')
+
+            ->emptyStateDescription(
+                'Schedule travel akan muncul di sini.'
+            );
     }
 }

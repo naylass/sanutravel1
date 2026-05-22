@@ -48,7 +48,20 @@ class ScheduleForm
 
                 ->relationship(
                     name: 'bookings',
-                    titleAttribute: 'booking_code'
+                    titleAttribute: 'booking_code',
+                    modifyQueryUsing: function ($query, Get $get) {
+
+                        $selected =
+                            $get('bookings') ?? [];
+
+                        $query->where(function ($q)
+                        use ($selected) {
+
+                            $q->whereDoesntHave('schedule')
+
+                                ->orWhereIn('id', $selected);
+                        });
+                    }
                 )
 
                 ->getOptionLabelFromRecordUsing(

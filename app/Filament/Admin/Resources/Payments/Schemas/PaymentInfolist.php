@@ -15,7 +15,7 @@ class PaymentInfolist
             TextEntry::make('booking.booking_code')
                 ->label('Kode Booking'),
 
-            TextEntry::make('booking.customer.name')
+            TextEntry::make('booking.customer_name')
                 ->label('Customer'),
 
             TextEntry::make('payment_method')
@@ -46,9 +46,20 @@ class PaymentInfolist
                 ->label('Settled At')
                 ->dateTime('d M Y H:i'),
 
+            // ✅ BUKTI PEMBAYARAN
             ImageEntry::make('payment_proof')
                 ->label('Bukti Pembayaran')
-                ->visible(fn ($record) => filled($record->payment_proof)),
+
+                ->getStateUsing(function ($record) {
+
+                    if (!$record->payment_proof) {
+                        return null;
+                    }
+
+                    return asset('storage/' . $record->payment_proof);
+                })
+
+                ->height(250)
         ]);
     }
 }
