@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
 use Filament\Tables\Table;
@@ -9,6 +10,10 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\CancelApprovedMail;
+use App\Mail\CancelRejectedMail;
+use App\Services\WhatsappService;
 
 class BookingsTable
 {
@@ -17,12 +22,6 @@ class BookingsTable
         return $table
 
             ->columns([
-
-                /*
-                |--------------------------------------------------------------------------
-                | BOOKING CODE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('booking_code')
                     ->label('Kode Booking')
@@ -33,44 +32,26 @@ class BookingsTable
                     ->icon('heroicon-m-ticket')
                     ->sortable(),
 
-                /*
-                |--------------------------------------------------------------------------
-                | CUSTOMER
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('customer_name')
                     ->label('Customer')
                     ->searchable()
-                    ->description(fn ($record) => $record->email)
+                    ->description(fn($record) => $record->email)
                     ->icon('heroicon-m-user-circle')
                     ->weight('semiBold'),
-
-                /*
-                |--------------------------------------------------------------------------
-                | SERVICE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('service.name')
                     ->label('Layanan')
                     ->badge()
-                    ->color(fn ($state) => match ($state) {
+                    ->color(fn($state) => match ($state) {
                         'Reguler' => 'info',
                         'Eksklusif' => 'warning',
                         default => 'gray',
                     })
-                    ->icon(fn ($state) => match ($state) {
+                    ->icon(fn($state) => match ($state) {
                         'Reguler' => 'heroicon-m-user-group',
                         'Eksklusif' => 'heroicon-m-star',
                         default => 'heroicon-m-ticket',
                     }),
-
-                /*
-                |--------------------------------------------------------------------------
-                | AREA
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('area')
                     ->label('Area')
@@ -78,35 +59,17 @@ class BookingsTable
                     ->color('gray')
                     ->icon('heroicon-m-map-pin'),
 
-                /*
-                |--------------------------------------------------------------------------
-                | PICKUP
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('pickup_location')
                     ->label('Penjemputan')
                     ->limit(35)
-                    ->tooltip(fn ($record) => $record->pickup_location)
+                    ->tooltip(fn($record) => $record->pickup_location)
                     ->icon('heroicon-m-truck'),
-
-                /*
-                |--------------------------------------------------------------------------
-                | DESTINATION
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('destination')
                     ->label('Tujuan')
                     ->limit(30)
-                    ->tooltip(fn ($record) => $record->destination)
+                    ->tooltip(fn($record) => $record->destination)
                     ->icon('heroicon-m-flag'),
-
-                /*
-                |--------------------------------------------------------------------------
-                | DATE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('pickup_date')
                     ->label('Tanggal')
@@ -116,35 +79,17 @@ class BookingsTable
                     ->color('success')
                     ->icon('heroicon-m-calendar-days'),
 
-                /*
-                |--------------------------------------------------------------------------
-                | TIME
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('pickup_time')
                     ->label('Jam')
                     ->icon('heroicon-m-clock')
                     ->badge()
                     ->color('info'),
 
-                /*
-                |--------------------------------------------------------------------------
-                | PASSENGERS
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('total_passengers')
                     ->label('Pax')
                     ->badge()
                     ->color('primary')
                     ->icon('heroicon-m-users'),
-
-                /*
-                |--------------------------------------------------------------------------
-                | TOTAL PRICE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('total_price')
                     ->label('Total')
@@ -154,15 +99,9 @@ class BookingsTable
                     ->sortable()
                     ->icon('heroicon-m-banknotes'),
 
-                /*
-                |--------------------------------------------------------------------------
-                | STATUS
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('status')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => match ($state) {
+                    ->formatStateUsing(fn($state) => match ($state) {
 
                         'pending' => 'Menunggu',
                         'confirmed' => 'Dikonfirmasi',
@@ -175,7 +114,7 @@ class BookingsTable
                         default => $state,
                     })
 
-                    ->color(fn ($state) => match ($state) {
+                    ->color(fn($state) => match ($state) {
 
                         'pending' => 'warning',
                         'confirmed' => 'success',
@@ -188,7 +127,7 @@ class BookingsTable
                         default => 'gray',
                     })
 
-                    ->icon(fn ($state) => match ($state) {
+                    ->icon(fn($state) => match ($state) {
 
                         'pending' => 'heroicon-m-clock',
                         'confirmed' => 'heroicon-m-check-circle',
@@ -202,94 +141,123 @@ class BookingsTable
                     }),
             ])
 
-            /*
-            |--------------------------------------------------------------------------
-            | ACTIONS
-            |--------------------------------------------------------------------------
-            */
-
             ->recordActions([
 
                 ActionGroup::make([
-
                     ViewAction::make()
                         ->color('gray'),
-
                     EditAction::make()
                         ->color('primary'),
-
                     DeleteAction::make()
-                        ->visible(fn () => auth()->user()?->hasRole('admin'))
+                        ->visible(fn() => auth()->user()?->hasRole('admin'))
                         ->color('danger'),
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | APPROVE CANCEL
-                    |--------------------------------------------------------------------------
-                    */
-
                     Action::make('approve_cancel')
-
                         ->label('Approve Cancel')
-
                         ->icon('heroicon-m-check-circle')
-
                         ->color('success')
-
-                        ->visible(
-                            fn ($record) =>
-                            $record->status === 'cancel_request'
-                        )
-
+                        ->visible(fn($record) => $record->status === 'cancel_request')
                         ->requiresConfirmation()
-
                         ->modalHeading('Batalkan Booking?')
-
-                        ->modalDescription('Booking akan dibatalkan permanen.')
-
+                        ->modalDescription('Booking akan dibatalkan dan notifikasi dikirim ke customer.')
                         ->action(function ($record) {
 
-                            $record->update([
-                                'status' => 'cancelled'
-                            ]);
+                            $record->update(['status' => 'cancelled']);
+
+                            try {
+                                if (!empty($record->email)) {
+                                    Mail::to($record->email)
+                                        ->send(new CancelApprovedMail($record));
+                                }
+                            } catch (\Exception $e) {
+                                logger('EMAIL CANCEL APPROVED ERROR: ' . $e->getMessage());
+                            }
+
+                            try {
+                                WhatsappService::send(
+                                    $record->phone_number,
+                                    "❌ BOOKING DIBATALKAN\n\n" .
+                                        "Halo {$record->customer_name},\n\n" .
+                                        "Booking Anda telah DIBATALKAN oleh admin.\n\n" .
+                                        "📌 Kode Booking: {$record->booking_code}\n" .
+                                        "🏁 Tujuan: {$record->destination}\n\n" .
+                                        "Terima kasih, Sanu Travel 🚐"
+                                );
+                            } catch (\Exception $e) {
+                                logger('WA CANCEL APPROVED ERROR: ' . $e->getMessage());
+                            }
+
+                            try {
+                                WhatsappService::send(
+                                    '6287764868369',
+                                    "✅ CANCEL DISETUJUI\n\n" .
+                                        "Kode: {$record->booking_code}\n" .
+                                        "Customer: {$record->customer_name}\n" .
+                                        "Tujuan: {$record->destination}\n" .
+                                        "Status: CANCELLED"
+                                );
+                            } catch (\Exception $e) {
+                                logger('WA ADMIN APPROVE CANCEL ERROR: ' . $e->getMessage());
+                            }
 
                             Notification::make()
-                                ->title('Booking berhasil dibatalkan')
+                                ->title('Booking dibatalkan, notifikasi terkirim')
                                 ->success()
                                 ->send();
                         }),
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | REJECT CANCEL
-                    |--------------------------------------------------------------------------
-                    */
-
                     Action::make('reject_cancel')
-
                         ->label('Reject Cancel')
-
                         ->icon('heroicon-m-x-circle')
-
                         ->color('danger')
-
-                        ->visible(
-                            fn ($record) =>
-                            $record->status === 'cancel_request'
-                        )
-
+                        ->visible(fn($record) => $record->status === 'cancel_request')
                         ->requiresConfirmation()
-
                         ->modalHeading('Tolak Request Cancel?')
-
+                        ->modalDescription('Booking kembali aktif dan notifikasi dikirim ke customer.')
                         ->action(function ($record) {
 
-                            $record->update([
-                                'status' => 'confirmed'
-                            ]);
+                            $record->update(['status' => 'confirmed']);
+
+                            try {
+                                if (!empty($record->email)) {
+                                    Mail::to($record->email)
+                                        ->send(new CancelRejectedMail($record));
+                                }
+                            } catch (\Exception $e) {
+                                logger('EMAIL CANCEL REJECT ERROR: ' . $e->getMessage());
+                            }
+
+                            try {
+                                WhatsappService::send(
+                                    $record->phone_number,
+                                    "🚐 PERMINTAAN CANCEL DITOLAK\n\n" .
+                                        "Halo {$record->customer_name},\n\n" .
+                                        "Permintaan cancel Anda DITOLAK oleh admin.\n" .
+                                        "Booking Anda tetap aktif.\n\n" .
+                                        "📌 Kode Booking: {$record->booking_code}\n" .
+                                        "🏁 Tujuan: {$record->destination}\n\n" .
+                                        "Terima kasih, Sanu Travel 🚐"
+                                );
+                            } catch (\Exception $e) {
+                                logger('WA CANCEL REJECT ERROR: ' . $e->getMessage());
+                            }
+
+                            // WA ADMIN
+                            try {
+                                WhatsappService::send(
+                                    '6287764868369',
+                                    "🚫 CANCEL DITOLAK\n\n" .
+                                        "Kode: {$record->booking_code}\n" .
+                                        "Customer: {$record->customer_name}\n" .
+                                        "Tujuan: {$record->destination}\n" .
+                                        "Status: CONFIRMED (kembali aktif)"
+                                );
+                            } catch (\Exception $e) {
+                                logger('WA ADMIN REJECT CANCEL ERROR: ' . $e->getMessage());
+                            }
 
                             Notification::make()
-                                ->title('Request cancel ditolak')
+                                ->title('Request cancel ditolak, notifikasi terkirim')
                                 ->warning()
                                 ->send();
                         }),

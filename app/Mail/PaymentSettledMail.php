@@ -5,25 +5,45 @@ namespace App\Mail;
 use App\Models\Payment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
 
 class PaymentSettledMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $payment;
+    public function __construct(
+        public Payment $payment,
+        public ?string $pdfPath = null 
+    ) {}
 
-    public function __construct($payment)
+    public function envelope(): Envelope
     {
-        $this->payment = $payment;
+        return new Envelope(
+            subject: 'Pembayaran Selesai - ' .
+                     $this->payment->booking->booking_code,
+        );
     }
 
-    public function build()
+    public function content(): Content
     {
-        return $this->subject(
-            'Pembayaran Selesai'
-        )->view(
-            'emails.payment-settled'
+        return new Content(
+            view: 'emails.payment-settled',
         );
+    }
+
+    public function attachments(): array
+    {
+        if ($this->pdfPath && file_exists($this->pdfPath)) {
+            return [
+                Attachment::fromPath($this->pdfPath)
+                    ->as('Receipt-' . $this->payment->booking->booking_code . '.pdf')
+                    ->withMime('application/pdf'),
+            ];
+        }
+
+        return [];
     }
 }

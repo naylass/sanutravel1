@@ -271,169 +271,176 @@ SANU TRAVEL
     {
         $booking = Booking::findOrFail($id);
 
-        if (
-            in_array(
-                $booking->status,
-                ['cancelled', 'completed']
-            )
-        ) {
-
-            return back()->with(
-                'error',
-                'Booking tidak bisa dibatalkan'
-            );
+        if (in_array($booking->status, ['cancelled', 'completed'])) {
+            return back()->with('error', 'Booking tidak bisa dibatalkan');
         }
 
         $departureTime = Carbon::parse(
-            $booking->pickup_date . ' ' .
-                $booking->pickup_time
+            $booking->pickup_date . ' ' . $booking->pickup_time
         );
 
-        if (
-            now()->gte(
-                $departureTime->copy()->subHours(6)
-            )
-        ) {
-
-            return back()->with(
-                'error',
-                'Batas waktu cancel sudah lewat'
-            );
+        if (now()->gte($departureTime->copy()->subHours(6))) {
+            return back()->with('error', 'Batas waktu cancel sudah lewat');
         }
 
-        if (
-            $booking->status === 'cancel_request'
-        ) {
-
-            return back()->with(
-                'error',
-                'Permintaan cancel sudah dikirim'
-            );
+        if ($booking->status === 'cancel_request') {
+            return back()->with('error', 'Permintaan cancel sudah dikirim');
         }
 
-        $booking->update([
-            'status' => 'cancel_request'
-        ]);
-
-        Mail::send(
-            'emails.cancel-request',
-            [
-                'booking' => $booking
-            ],
-            function ($message) {
-
-                $message->to('nylaadjah@gmail.com')
-                    ->subject('Permintaan Cancel Booking');
-            }
-        );
-
-        return back()->with(
-            'success',
-            'Permintaan cancel berhasil dikirim'
-        );
-    }
-
-    public function approveCancel($id)
-    {
-        $booking = Booking::findOrFail($id);
-
-        $booking->update([
-            'status' => 'cancelled'
-        ]);
+        $booking->update(['status' => 'cancel_request']);
 
         try {
-
-            if (!empty($booking->email)) {
-
-                Mail::to($booking->email)->send(
-                    new CancelApprovedMail($booking)
-                );
-            }
+            Mail::send(
+                'emails.cancel-request',
+                ['booking' => $booking],
+                function ($message) use ($booking) {
+                    $message->to('nylaadjah@gmail.com')
+                        ->subject(
+                            'Permintaan Cancel Booking — ' .
+                                $booking->booking_code
+                        );
+                }
+            );
         } catch (\Exception $e) {
-            logger('EMAIL CANCEL APPROVED ERROR: ' . $e->getMessage());
+            logger('EMAIL ADMIN CANCEL REQUEST ERROR: ' . $e->getMessage());
         }
 
         try {
-
             WhatsappService::send(
-
-                $booking->phone_number,
-
-                "❌ BOOKING DIBATALKAN
-
-Halo {$booking->customer_name},
-
-Booking Anda telah DIBATALKAN oleh admin.
-
-Kode Booking:
-{$booking->booking_code}
-
-Tujuan:
-{$booking->destination}
-
-Terima kasih,
-Sanu Travel 🚐"
+                '6287764868369',
+                "⚠️ PERMINTAAN CANCEL MASUK\n\n" .
+                    "Kode Booking: {$booking->booking_code}\n" .
+                    "Customer: {$booking->customer_name}\n" .
+                    "No HP: {$booking->phone_number}\n" .
+                    "Tujuan: {$booking->destination}\n" .
+                    "Tgl Berangkat: {$booking->pickup_date} {$booking->pickup_time}\n\n" .
+                    "Silakan approve atau reject di admin panel."
             );
         } catch (\Exception $e) {
-            logger('WA CANCEL APPROVED ERROR: ' . $e->getMessage());
+            logger('WA ADMIN CANCEL REQUEST ERROR: ' . $e->getMessage());
         }
 
-        return back()->with(
-            'success',
-            'Booking berhasil dibatalkan'
-        );
+        try {
+            WhatsappService::send(
+                $booking->phone_number,
+                "⏳ PERMINTAAN CANCEL DITERIMA\n\n" .
+                    "Halo {$booking->customer_name},\n\n" .
+                    "Permintaan cancel Anda telah diterima dan sedang diproses admin.\n\n" .
+                    "📌 Kode Booking: {$booking->booking_code}\n" .
+                    "🏁 Tujuan: {$booking->destination}\n\n" .
+                    "Kami akan segera menghubungi Anda.\n\n" .
+                    "Terima kasih, Sanu Travel 🚐"
+            );
+        } catch (\Exception $e) {
+            logger('WA CUSTOMER CANCEL REQUEST ERROR: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Permintaan cancel berhasil dikirim');
     }
 
     public function rejectCancel($id)
     {
         $booking = Booking::findOrFail($id);
 
-        $booking->update([
-            'status' => 'confirmed'
-        ]);
+        $booking->update(['status' => 'confirmed']);
 
+        // =========================================================
+        // EMAIL CUSTOMER
+        // =========================================================
         try {
-
             if (!empty($booking->email)) {
-
-                Mail::to($booking->email)->send(
-                    new CancelRejectedMail($booking)
-                );
+                Mail::to($booking->email)
+                    ->send(new CancelRejectedMail($booking));
             }
         } catch (\Exception $e) {
             logger('EMAIL CANCEL REJECT ERROR: ' . $e->getMessage());
         }
 
+        // =========================================================
+        // WA CUSTOMER
+        // =========================================================
         try {
-
             WhatsappService::send(
-
                 $booking->phone_number,
-
-                "🚐 PERMINTAAN CANCEL DITOLAK
-
-Halo {$booking->customer_name},
-
-Permintaan cancel Anda DITOLAK.
-
-Booking Anda tetap aktif.
-
-Kode Booking:
-{$booking->booking_code}
-
-Tujuan:
-{$booking->destination}
-
-Terima kasih,
-Sanu Travel"
+                "🚐 PERMINTAAN CANCEL DITOLAK\n\n" .
+                    "Halo {$booking->customer_name},\n\n" .
+                    "Permintaan cancel Anda DITOLAK oleh admin.\n" .
+                    "Booking Anda tetap aktif.\n\n" .
+                    "📌 Kode Booking: {$booking->booking_code}\n" .
+                    "🏁 Tujuan: {$booking->destination}\n\n" .
+                    "Terima kasih, Sanu Travel 🚐"
             );
         } catch (\Exception $e) {
             logger('WA CANCEL REJECT ERROR: ' . $e->getMessage());
         }
 
-        return back()->with(
-            'success',
-            'Cancel booking ditolak'
-        );
+        try {
+            WhatsappService::send(
+                '6287764868369',
+                "🚫 CANCEL DITOLAK\n\n" .
+                    "Kode: {$booking->booking_code}\n" .
+                    "Customer: {$booking->customer_name}\n" .
+                    "Tujuan: {$booking->destination}\n" .
+                    "Status: CONFIRMED (kembali aktif)"
+            );
+        } catch (\Exception $e) {
+            logger('WA ADMIN REJECT CANCEL ERROR: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Cancel booking ditolak');
+    }
+
+    public function approveCancel($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $booking->update(['status' => 'cancelled']);
+
+        // =========================================================
+        // EMAIL CUSTOMER
+        // =========================================================
+        try {
+            if (!empty($booking->email)) {
+                Mail::to($booking->email)
+                    ->send(new CancelApprovedMail($booking));
+            }
+        } catch (\Exception $e) {
+            logger('EMAIL CANCEL APPROVED ERROR: ' . $e->getMessage());
+        }
+
+        // =========================================================
+        // WA CUSTOMER
+        // =========================================================
+        try {
+            WhatsappService::send(
+                $booking->phone_number,
+                "❌ BOOKING DIBATALKAN\n\n" .
+                    "Halo {$booking->customer_name},\n\n" .
+                    "Booking Anda telah DIBATALKAN oleh admin.\n\n" .
+                    "📌 Kode Booking: {$booking->booking_code}\n" .
+                    "🏁 Tujuan: {$booking->destination}\n\n" .
+                    "Terima kasih, Sanu Travel 🚐"
+            );
+        } catch (\Exception $e) {
+            logger('WA CANCEL APPROVED ERROR: ' . $e->getMessage());
+        }
+
+        // =========================================================
+        // WA ADMIN — konfirmasi sudah approve
+        // =========================================================
+        try {
+            WhatsappService::send(
+                '6287764868369',
+                "✅ CANCEL DISETUJUI\n\n" .
+                    "Kode: {$booking->booking_code}\n" .
+                    "Customer: {$booking->customer_name}\n" .
+                    "Tujuan: {$booking->destination}\n" .
+                    "Status: CANCELLED"
+            );
+        } catch (\Exception $e) {
+            logger('WA ADMIN APPROVE CANCEL ERROR: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Booking berhasil dibatalkan');
     }
 }

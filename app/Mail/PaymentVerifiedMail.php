@@ -5,45 +5,45 @@ namespace App\Mail;
 use App\Models\Payment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaymentVerifiedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $payment;
-    public $booking;
+    public function __construct(
+        public Payment $payment,
+        public ?string $pdfPath = null  // ← tambah parameter ini
+    ) {}
 
-    public function __construct(Payment $payment)
+    public function envelope(): Envelope
     {
-        $this->payment = $payment;
-        $this->booking = $payment->booking;
+        return new Envelope(
+            subject: 'Pembayaran Berhasil Diverifikasi - ' .
+                     $this->payment->booking->booking_code,
+        );
     }
 
-    public function build()
+    public function content(): Content
     {
-        $pdf = Pdf::loadView(
-            'pdf.payment-receipt',
-            [
-                'payment' => $this->payment,
-                'booking' => $this->booking
-            ]
+        return new Content(
+            view: 'emails.payment-verified', // sesuaikan dengan view-mu
         );
+    }
 
-        return $this->subject(
-                'Pembayaran Berhasil Diverifikasi'
-            )
+    public function attachments(): array
+    {
+        if ($this->pdfPath && file_exists($this->pdfPath)) {
+            return [
+                Attachment::fromPath($this->pdfPath)
+                    ->as('Receipt-' . $this->payment->booking->booking_code . '.pdf')
+                    ->withMime('application/pdf'),
+            ];
+        }
 
-            ->view(
-                'emails.payment-verified'
-            )
-
-            ->attachData(
-                $pdf->output(),
-                'receipt-' .
-                $this->booking->booking_code .
-                '.pdf'
-            );
+        return [];
     }
 }

@@ -19,6 +19,7 @@ use App\Mail\DriverCashReceivedCustomerMail;
 use App\Mail\PaymentSettledMail;
 use App\Mail\PaymentVerifiedMail;
 use App\Mail\DriverAssignedCashMail;
+use App\Services\PaymentService;
 
 class PaymentController extends Controller
 {
@@ -252,232 +253,21 @@ class PaymentController extends Controller
 
     public function verify($id)
     {
-        $payment = Payment::with('booking')
-            ->findOrFail($id);
+        $payment = Payment::with('booking')->findOrFail($id);
 
-        $booking = $payment->booking;
+        PaymentService::verify($payment);
 
-        $payment->update([
-            'status' => 'verified',
-            'verified_at' => now('Asia/Jakarta'),
-        ]);
-
-        $booking->update([
-            'status' => 'confirmed',
-        ]);
-
-
-        $pdf = Pdf::loadView(
-            'pdf.payment-receipt',
-            compact('booking', 'payment')
-        );
-
-        $pdfName =
-            'receipt-' .
-            $booking->booking_code .
-            '.pdf';
-
-        $folder =
-            storage_path('app/public/receipts');
-
-        if (!file_exists($folder)) {
-
-            mkdir($folder, 0777, true);
-        }
-
-        $pdfPath = $folder . '/' . $pdfName;
-
-        file_put_contents(
-            $pdfPath,
-            $pdf->output()
-        );
-
-        $pdfUrl =
-            asset(
-                'storage/receipts/' .
-                    $pdfName
-            );
-
-        try {
-
-            if (!empty($booking->email)) {
-
-                Mail::to($booking->email)
-                    ->send(new PaymentVerifiedMail($payment));
-            }
-        } catch (\Exception $e) {
-            logger('EMAIL VERIFY ERROR: ' . $e->getMessage());
-        }
-
-        try {
-
-            $phone = $booking->phone_number;
-
-            if (!empty($phone)) {
-
-                WhatsappService::send(
-
-                    $phone,
-
-                    "✅ PEMBAYARAN BERHASIL DIVERIFIKASI
-
-Halo {$booking->customer_name},
-
-Pembayaran Anda telah berhasil diverifikasi oleh admin.
-
-📌 Kode Booking:
-{$booking->booking_code}
-
-📍 Status:
-BOOKING DIKONFIRMASI
-
-Terima kasih 🚐"
-                );
-            }
-        } catch (\Exception $e) {
-            logger('WA VERIFY ERROR: ' . $e->getMessage());
-        }
-
-        try {
-
-            $pdfPublicUrl = url('storage/receipts/' . $pdfName);
-
-            WhatsappService::sendDocument(
-
-                $booking->phone_number,
-                $pdfPublicUrl,
-                "📄 RECEIPT PEMBAYARAN\n\nKode Booking: {$booking->booking_code}"
-            );
-        } catch (\Exception $e) {
-            logger('WA PDF ERROR: ' . $e->getMessage());
-        }
-
-        try {
-
-            WhatsappService::send(
-
-                '6287764868369',
-
-                "✅ PEMBAYARAN VERIFIED
-
-Kode:
-{$booking->booking_code}
-
-Customer:
-{$booking->customer_name}
-
-Total:
-Rp " .
-                    number_format(
-                        $booking->total_price,
-                        0,
-                        ',',
-                        '.'
-                    )
-            );
-        } catch (\Exception $e) {
-
-            logger(
-                'WA ADMIN VERIFY ERROR: ' .
-                    $e->getMessage()
-            );
-        }
-
-        return back()->with(
-            'success',
-            'Pembayaran berhasil diverifikasi'
-        );
+        return back()->with('success', 'Pembayaran berhasil diverifikasi');
     }
 
     public function reject($id)
-    {
-        $payment = Payment::with('booking')
-            ->findOrFail($id);
+{
+    $payment = Payment::with('booking')->findOrFail($id);
 
-        $booking = $payment->booking;
+    PaymentService::reject($payment);
 
-        $payment->update([
-            'status' => 'rejected',
-        ]);
-
-        $booking->update([
-            'status' => 'pending',
-        ]);
-
-        // =========================
-        // WA CUSTOMER
-        // =========================
-        try {
-
-            $phone = $booking->phone_number;
-
-            if (!empty($phone)) {
-
-                WhatsappService::send(
-
-                    $phone,
-
-                    "❌ PEMBAYARAN DITOLAK
-
-Halo {$booking->customer_name},
-
-Pembayaran Anda ditolak oleh admin.
-
-📌 Kode Booking:
-{$booking->booking_code}
-
-Silakan upload ulang bukti pembayaran.
-
-Terima kasih 🚐"
-                );
-            }
-        } catch (\Exception $e) {
-            logger('WA REJECT ERROR: ' . $e->getMessage());
-        }
-
-        // =========================
-        // EMAIL CUSTOMER
-        // =========================
-        try {
-
-            if (!empty($booking->email)) {
-
-                Mail::to($booking->email)
-                    ->send(new PaymentRejectedMail($payment));
-            }
-        } catch (\Exception $e) {
-            logger('EMAIL REJECT ERROR: ' . $e->getMessage());
-        }
-
-        // =========================
-        // WA ADMIN
-        // =========================
-        try {
-
-            WhatsappService::send(
-
-                '6287764868369',
-
-                "❌ PEMBAYARAN DITOLAK
-
-Kode Booking:
-{$booking->booking_code}
-
-Customer:
-{$booking->customer_name}
-
-Status:
-PAYMENT REJECTED"
-            );
-        } catch (\Exception $e) {
-            logger('WA ADMIN REJECT ERROR: ' . $e->getMessage());
-        }
-
-        return back()->with(
-            'error',
-            'Pembayaran berhasil ditolak'
-        );
-    }
+    return back()->with('error', 'Pembayaran berhasil ditolak');
+}
 
     public function driverCashPage()
     {
@@ -689,91 +479,10 @@ Terima kasih telah menggunakan Sanu Travel 🚐"
 
     public function settle($id)
     {
-        $payment = Payment::with('booking')
-            ->findOrFail($id);
+        $payment = Payment::with('booking')->findOrFail($id);
 
-        $booking = $payment->booking;
+        PaymentService::settle($payment);
 
-        $payment->update([
-
-            'status' => 'settled',
-
-            'verified_at' => now('Asia/Jakarta'),
-
-            'settled_to_admin_at' => now('Asia/Jakarta'),
-        ]);
-
-        $booking->update([
-
-            'status' => 'completed',
-        ]);
-
-        if (!Income::where('payment_id', $payment->id)->exists()) {
-
-            Income::create([
-
-                'payment_id'   => $payment->id,
-
-                'amount'       => $payment->amount,
-
-                'income_type'  => 'booking',
-
-                'description'  =>
-                'Income booking ' .
-                    $booking->booking_code,
-
-                'income_date'  => now('Asia/Jakarta'),
-            ]);
-        }
-
-        try {
-
-            if (!empty($booking->email)) {
-
-                Mail::to($booking->email)
-                    ->send(
-                        new PaymentSettledMail($payment)
-                    );
-            }
-        } catch (\Exception $e) {
-
-            logger(
-                'EMAIL SETTLED ERROR: ' .
-                    $e->getMessage()
-            );
-        }
-
-        try {
-
-            WhatsappService::send(
-
-                $booking->phone_number,
-
-                "✅ PEMBAYARAN SELESAI
-
-Kode Booking:
-{$booking->booking_code}
-
-Halo {$booking->customer_name},
-
-Pembayaran Anda telah selesai diproses admin.
-
-Status:
-SELESAI
-
-Terima kasih telah menggunakan Sanu Travel 🚐"
-            );
-        } catch (\Exception $e) {
-
-            logger('WA SETTLED ERROR: ' . $e->getMessage(), [
-                'booking_id' => $booking->id ?? null,
-                'phone' => $booking->phone_number
-            ]);
-        }
-
-        return back()->with(
-            'success',
-            'Pembayaran berhasil diselesaikan'
-        );
+        return back()->with('success', 'Pembayaran berhasil diselesaikan');
     }
 }

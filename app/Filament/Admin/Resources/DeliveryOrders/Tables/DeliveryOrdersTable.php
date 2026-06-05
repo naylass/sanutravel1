@@ -22,12 +22,6 @@ class DeliveryOrdersTable
 
             ->columns([
 
-                /*
-                |--------------------------------------------------------------------------
-                | BOOKING
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('booking.booking_code')
 
                     ->label('Booking')
@@ -49,12 +43,6 @@ class DeliveryOrdersTable
                         $record->booking?->customer_name ?? '-'
                     ),
 
-                /*
-                |--------------------------------------------------------------------------
-                | DRIVER
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('driver.name')
 
                     ->label('Sopir')
@@ -74,11 +62,6 @@ class DeliveryOrdersTable
                         $record->driver?->phone_number ?? '-'
                     ),
 
-                /*
-                |--------------------------------------------------------------------------
-                | VEHICLE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('vehicle.brand')
 
@@ -97,12 +80,6 @@ class DeliveryOrdersTable
                         'Plat: ' .
                             ($record->vehicle?->plate_number ?? '-')
                     ),
-
-                /*
-                |--------------------------------------------------------------------------
-                | SCHEDULE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('schedule')
 
@@ -127,11 +104,6 @@ class DeliveryOrdersTable
                         )->translatedFormat('d M Y • H:i');
                     }),
 
-                /*
-                |--------------------------------------------------------------------------
-                | PICKUP
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('pickup_point')
 
@@ -144,12 +116,6 @@ class DeliveryOrdersTable
                     ->limit(40)
 
                     ->tooltip(fn($state) => $state),
-
-                /*
-                |--------------------------------------------------------------------------
-                | DESTINATION
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('destination')
 
@@ -164,12 +130,6 @@ class DeliveryOrdersTable
                     ->limit(30)
 
                     ->tooltip(fn($state) => $state),
-
-                /*
-                |--------------------------------------------------------------------------
-                | PHONE
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('booking.phone_number')
 
@@ -186,12 +146,6 @@ class DeliveryOrdersTable
                     ->badge()
 
                     ->color('warning'),
-
-                /*
-                |--------------------------------------------------------------------------
-                | STATUS
-                |--------------------------------------------------------------------------
-                */
 
                 TextColumn::make('status')
 
@@ -238,12 +192,6 @@ class DeliveryOrdersTable
                         default => 'gray',
                     }),
 
-                /*
-                |--------------------------------------------------------------------------
-                | CREATED
-                |--------------------------------------------------------------------------
-                */
-
                 TextColumn::make('created_at')
 
                     ->label('Dibuat')
@@ -255,19 +203,7 @@ class DeliveryOrdersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
 
-            /*
-            |--------------------------------------------------------------------------
-            | ADMIN TIDAK BISA UPDATE STATUS
-            |--------------------------------------------------------------------------
-            */
-
             ->actions([])
-
-            /*
-            |--------------------------------------------------------------------------
-            | HEADER ACTION
-            |--------------------------------------------------------------------------
-            */
 
             ->headerActions([
 
@@ -324,41 +260,45 @@ class DeliveryOrdersTable
                         $delivery->load([
                             'driver',
                             'vehicle',
-                            'booking',
-                            'schedule'
+                            'booking.payment',
+                            'schedule',
                         ]);
 
-                        /*
-                        |--------------------------------------------------------------------------
-                        | EMAIL DRIVER
-                        |--------------------------------------------------------------------------
-                        */
+                        $driver  = $delivery->driver;
+                        $booking = $delivery->booking;
 
-                        if ($delivery->driver?->email) {
+                        if (!empty($driver?->email)) {
+                            try {
+                                Mail::to($driver->email)
+                                    ->send(new DeliveryOrderCreatedMail($delivery));
+                            } catch (\Exception $e) {
+                                logger('EMAIL DO ERROR: ' . $e->getMessage(), [
+                                    'delivery_id' => $delivery->id,
+                                ]);
+                            }
+                        }
 
-                            Mail::to(
-                                $delivery->driver->email
-                            )->send(
-                                new DeliveryOrderCreatedMail($delivery)
-                            );
+                        if (
+                            !empty($driver?->email) &&
+                            $booking?->payment?->payment_method === 'cash'
+                        ) {
+                            try {
+                                Mail::to($driver->email)
+                                    ->send(new \App\Mail\DriverAssignedCashMail($booking));
+                            } catch (\Exception $e) {
+                                logger('EMAIL CASH REMINDER ERROR: ' . $e->getMessage(), [
+                                    'delivery_id' => $delivery->id,
+                                ]);
+                            }
                         }
 
                         Notification::make()
-
                             ->title('Delivery Order berhasil dibuat')
-
                             ->success()
-
                             ->send();
                     }),
 
             ])
-
-            /*
-            |--------------------------------------------------------------------------
-            | BULK ACTION
-            |--------------------------------------------------------------------------
-            */
 
             ->bulkActions([
 
@@ -369,12 +309,6 @@ class DeliveryOrdersTable
 
                 ]),
             ])
-
-            /*
-            |--------------------------------------------------------------------------
-            | STYLE
-            |--------------------------------------------------------------------------
-            */
 
             ->striped()
 
