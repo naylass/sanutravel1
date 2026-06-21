@@ -12,20 +12,22 @@ return new class extends Migration {
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
             $table->foreignId('schedule_id')->nullable()->constrained('schedules')->nullOnDelete();
+            $table->string('customer_name');
             $table->string('booking_code')->unique();
-            $table->date('pickup_date')->nullable();
-            $table->enum('pickup_type', ['reguler', 'eksklusif']);
-            $table->time('pickup_time')->nullable();
+            $table->date('pickup_date');
+            $table->time('pickup_time');
             $table->string('phone_number');
-            $table->unique(['phone_number', 'booking_code']);
-            $table->string('pickup_location');
+            $table->string('email');
+            $table->string('area');
+            $table->text('pickup_location');
             $table->integer('total_passengers');
             $table->string('destination');
-            $table->decimal('price', 12, 2);
-            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');
+            $table->decimal('base_price', 12, 2);
+            $table->decimal('pickup_fee', 12, 2)->default(0);
+            $table->decimal('total_price', 12, 2);
+            $table->enum('status', ['pending', 'confirmed','scheduled','on_progress','completed','cancelled', 'cancel_request'])->default('pending');
             $table->timestamps();
         });
     }

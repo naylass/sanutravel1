@@ -10,12 +10,15 @@ use App\Filament\Admin\Resources\Payments\Schemas\PaymentForm;
 use App\Filament\Admin\Resources\Payments\Schemas\PaymentInfolist;
 use App\Filament\Admin\Resources\Payments\Tables\PaymentsTable;
 use App\Models\Payment;
+use App\Models\User;
 use BackedEnum;
 use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentResource extends Resource
 {
@@ -56,5 +59,46 @@ class PaymentResource extends Resource
             'view' => ViewPayment::route('/{record}'),
             'edit' => EditPayment::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (!Auth::user()->hasAnyRole(['admin'])) {
+            $query->whereHas('booking', function ($q) {
+                $q->where('user_id', Auth::id());
+            });
+        }
+
+        return $query;
+    }
+
+    public static function canViewAny(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $user->hasAnyRole([
+            'admin',
+            'driver',
+        ]);
+    }
+
+    public static function canView($record): bool
+    {
+        if (Auth::user()->hasAnyRole(['admin'])) {
+            return true;
+        }
+
+        return $record->booking && $record->booking->user_id === Auth::id();
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 }

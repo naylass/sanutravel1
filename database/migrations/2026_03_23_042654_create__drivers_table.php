@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->string('photo')->nullable();
             $table->string('name');
+             $table->string('email')->nullable();
             $table->string('phone');
             $table->string('birth_place');
             $table->date('birth_date');

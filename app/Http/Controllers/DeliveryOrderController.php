@@ -2,64 +2,128 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Mail\DriverAssignedCashMail;
+use App\Models\Booking;
 use App\Models\DeliveryOrder;
-use App\Models\Schedule;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class DeliveryOrderController extends Controller
 {
-    // 1. BUAT DO DARI SCHEDULE (ADMIN)
-    public function store($schedule_id)
+    public function index()
     {
-        $schedule = Schedule::findOrFail($schedule_id);
+        $orders = DeliveryOrder::where('driver_id', Auth::id())
+            ->with(['booking', 'schedule'])
+            ->latest()
+            ->get();
 
-        $do = DeliveryOrder::create([
-            'schedule_id' => $schedule->id,
-            'driver_id' => $schedule->driver_id,
-            'status' => 'waiting',
-        ]);
-
-        return response()->json([
-            'message' => 'Delivery Order dibuat',
-            'data' => $do
-        ]);
+        return view('driver.delivery', compact('orders'));
     }
 
-    // 2. DRIVER LIHAT DO
     public function myOrders()
     {
-        $do = DeliveryOrder::where('driver_id', auth()->id)
-                ->with('schedule')
-                ->get();
+        $orders = DeliveryOrder::where('driver_id', Auth::id())
+            ->with(['booking', 'schedule'])
+            ->get();
 
-        return response()->json($do);
+        return response()->json($orders);
     }
 
-    // 3. DRIVER MULAI PERJALANAN
     public function startTrip($id)
     {
-        $do = DeliveryOrder::findOrFail($id);
+        $order = DeliveryOrder::with(['booking', 'schedule'])
+            ->where('driver_id', Auth::id())
+            ->findOrFail($id);
 
-        $do->update([
-            'status' => 'on_trip'
-        ]);
+        $order->update(['status' => 'ongoing']);
 
-        return response()->json([
-            'message' => 'Perjalanan dimulai'
-        ]);
+        // Update semua booking di schedule yang sama
+        if ($order->schedule_id) {
+            Booking::where('schedule_id', $order->schedule_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->update(['status' => 'on_progress']);
+        }
+
+        // Fallback: booking langsung relasi ke DO ini
+        if ($order->booking_id) {
+            Booking::where('id', $order->booking_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->update(['status' => 'on_progress']);
+        }
+
+        return back()->with('success', 'Perjalanan dimulai');
     }
 
-    // 4. DRIVER SELESAI
     public function finishTrip($id)
     {
-        $do = DeliveryOrder::findOrFail($id);
+        $order = DeliveryOrder::with(['booking', 'schedule'])
+            ->where('driver_id', Auth::id())
+            ->findOrFail($id);
 
-        $do->update([
-            'status' => 'done'
+        $order->update(['status' => 'completed']);
+
+        // Update semua booking di schedule yang sama
+        if ($order->schedule_id) {
+            Booking::where('schedule_id', $order->schedule_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->update(['status' => 'completed']);
+        }
+
+        // Fallback: booking langsung relasi ke DO ini
+        if ($order->booking_id) {
+            Booking::where('id', $order->booking_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->update(['status' => 'completed']);
+        }
+
+        return back()->with('success', 'Perjalanan selesai');
+    }
+
+    public function store($schedule_id)
+    {
+        $order = DeliveryOrder::create([
+            'driver_id'   => Auth::id(),
+            'schedule_id' => $schedule_id,
+            'status'      => 'pending',
         ]);
 
-        return response()->json([
-            'message' => 'Perjalanan selesai'
+        $order->load([
+            'booking.payment',
+            'driver',
+            'schedule'
         ]);
+
+        $booking = $order->booking;
+
+        if (
+            $booking &&
+            $booking->payment &&
+            $booking->payment->payment_method === 'cash'
+        ) {
+            try {
+                if (!empty($order->driver?->email)) {
+                    Mail::to($order->driver->email)
+                        ->send(new DriverAssignedCashMail($booking));
+                }
+            } catch (\Exception $e) {
+                logger('EMAIL DRIVER CASH ERROR: ' . $e->getMessage(), [
+                    'order_id'  => $order->id,
+                    'driver_id' => $order->driver_id ?? null,
+                ]);
+            }
+        }
+
+        return response()->json($order);
+    }
+
+    public function updateStatus($id, Request $request)
+    {
+        $order = DeliveryOrder::where('driver_id', Auth::id())
+            ->findOrFail($id);
+
+        $order->update(['status' => $request->status]);
+
+        return back()->with('success', 'Status diperbarui');
     }
 }

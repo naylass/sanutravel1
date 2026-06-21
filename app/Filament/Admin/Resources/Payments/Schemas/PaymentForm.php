@@ -5,10 +5,11 @@ namespace App\Filament\Admin\Resources\Payments\Schemas;
 use App\Models\Booking;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentForm
 {
@@ -16,108 +17,68 @@ class PaymentForm
     {
         return $schema->components([
 
-            // 📦 PILIH BOOKING
+            // 🔗 BOOKING RELATION
             Select::make('booking_id')
-                ->label('Booking Transfer')
+                ->label('Booking')
                 ->relationship('booking', 'booking_code')
-                ->getOptionLabelFromRecordUsing(
-                    fn($record) =>
-                    $record->booking_code . ' - ' . ($record->user?->name ?? '-')
-                )
-                ->searchable(['booking_code', 'user.name'])
+                ->searchable()
                 ->preload()
                 ->reactive()
-
-                ->getOptionLabelFromRecordUsing(
-                    fn($record) =>
-                    $record->booking_code .
-                        ' - ' . ($record->user?->name ?? '-') .
-                        ' [' . strtoupper($record->status ?? '-') . ']'
-                )
                 ->afterStateUpdated(function ($state, $set) {
 
-                    $booking = \App\Models\Booking::with('user')->find($state);
+                    $booking = Booking::find($state);
 
                     if ($booking) {
-                        // INFO BOOKING
-                        $set(
-                            'booking_info',
-                            'Kode: ' . $booking->booking_code .
-                                ' | Customer: ' . ($booking->user->name ?? '-') .
-                                ' | Status: ' . ($booking->status ?? '-')
-                        );
-
-                        // TOTAL HARGA
-                        $set('amount', $booking->price);
+                        $set('amount', $booking->total_price);
+                        $set('transfer_info', 'Booking: ' . $booking->booking_code);
                     }
                 })
                 ->required(),
 
-            // 🔍 INFO BOOKING
-            TextInput::make('booking_info')
-                ->label('Info Booking')
-                ->readOnly()
-                ->columnSpanFull(),
-
-            // 💳 METODE PEMBAYARAN
+            // 💳 PAYMENT METHOD
             Select::make('payment_method')
                 ->label('Metode Pembayaran')
                 ->options([
-                    'transfer' => 'Transfer',
-                    'cash' => 'Cash',
-                    'ewallet' => 'E-Wallet'
+                    'qris' => 'QRIS',
+                    'cash' => 'Cash (Bayar ke Driver)',
                 ])
                 ->required()
                 ->live()
                 ->afterStateUpdated(function ($state, $set) {
 
-                    if ($state === 'cash') {
-                        $set('status', 'verified');
+                    // QRIS → waiting verification
+                    if ($state === 'qris') {
+                        $set('status', 'waiting_verification');
                     }
 
-                    if ($state === 'transfer') {
-                        $set('status', 'waiting');
+                    // CASH → langsung ke driver flow
+                    if ($state === 'cash') {
+                        $set('status', 'waiting_driver_collection');
                     }
                 }),
 
-            // 🏦 SECTION TRANSFER (MUNCUL HANYA SAAT TRANSFER)
-            Section::make('Informasi Transfer')
-                ->visible(fn($get) => $get('payment_method') === 'transfer')
-                ->schema([
+            TextInput::make('transfer_info')
+                ->label('Keterangan')
+                ->nullable(),
 
-                    TextInput::make('bank_name')
-                        ->label('Bank')
-                        ->default('BCA')
-                        ->readOnly(),
+            // 📸 BUKTI PEMBAYARAN (QRIS ONLY)
+            FileUpload::make('payment_proof')
+                ->label('Bukti Pembayaran')
+                ->image()
+                ->directory('payment-proofs')
+                ->visible(fn ($get) => $get('payment_method') === 'qris')
+                ->nullable(),
 
-                    TextInput::make('account_number')
-                        ->label('No Rekening')
-                        ->default('1234567890')
-                        ->readOnly(),
-
-                    TextInput::make('account_name')
-                        ->label('Atas Nama')
-                        ->default('PT SANU TRAVEL')
-                        ->readOnly(),
-
-                    FileUpload::make('proof_image')
-                        ->label('Bukti Transfer')
-                        ->image()
-                        ->visible(fn($get) => $get('payment_method') === 'transfer')
-                        ->required(fn($get) => $get('payment_method') === 'transfer')
-                ]),
-
-            // 📅 TANGGAL
-            DateTimePicker::make('payment_date')
-                ->label('Tanggal Pembayaran')
-                ->required(),
-
-            // 💰 JUMLAH
+            // 💰 AMOUNT
             TextInput::make('amount')
-                ->label('Total Pembayaran')
                 ->numeric()
                 ->readOnly()
                 ->required(),
+
+            // 🕒 PAYMENT DATE
+            DateTimePicker::make('paid_at')
+                ->label('Waktu Bayar')
+                ->nullable(),
         ]);
     }
 }

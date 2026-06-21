@@ -16,6 +16,7 @@ class Driver extends Model
         'photo',
         'name',
         'phone',
+        'email',
         'birth_place',
         'birth_date',
         'gender',
@@ -52,4 +53,5 @@ class Driver extends Model
     {
         return $this->hasOne(Vehicle::class);
     }
+
 }

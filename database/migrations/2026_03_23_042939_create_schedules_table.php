@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('vehicle_id')->constrained('vehicles')->cascadeOnDelete();
             $table->date('departure_date');
             $table->time('departure_time');
-            $table->string('pickup_point');
+            $table->string('pickup_location');
             $table->string('destination');
             $table->integer('available_seats');
             $table->timestamps();

@@ -5,15 +5,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         //kode ini buat nambah role akun
         $roles = [
@@ -24,15 +22,35 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($roles as $role) {
-            Role::firstOrCreate(['name' => $role]);
+            Role::firstOrCreate([
+                'name' => $role,
+                'guard_name' => 'web',
+                ]);
         }
         //kode ini buat nambah permission
         $permissions = [
             'manage.users',
+            'create.users',
+            'edit.users',
+
             'manage.drivers',
+            'create.drivers',
+            'edit.drivers',
+            'delete.drivers',
+
             'manage.services',
+            'edit.services',
+
             'manage.vehicles',
+            'create.vehicles',
+            'edit.vehicles',
+            'delete.vehicles',
+
             'manage.schedules',
+            'create.schedules',
+            'edit.schedules',
+            'delete.schedules',
+            'cancel.schedule',
 
             'manage.bookings',
             'edit.bookings',
@@ -40,12 +58,16 @@ class RolePermissionSeeder extends Seeder
             'cancel.booking',
 
             'manage.deliveryorders',
+            'create.deliveryorders',
+
             'manage.payments',
+            'create.payments',
+            'edit.payments',
+
             'manage.incomes',
-            'manage.notifications',
-
-
-
+            'create.incomes',
+            'edit.incomes',
+            'delete.incomes',
         ];
 
         foreach ($permissions as $permission) {
@@ -67,7 +89,6 @@ class RolePermissionSeeder extends Seeder
                 'manage.deliveryorders',
                 'manage.payments',
                 'manage.incomes',
-                'manage.notifications',
             ]);
 
         Role::findByName('driver')

@@ -39,20 +39,6 @@ class VehiclesTable
                     ->numeric()
                     ->sortable(),
 
-                TextColumn::make('status')
-                    ->label('Status Kendaraan')
-                    ->badge()
-                    ->color(fn($state) => match ($state) {
-                        'available' => 'success',
-                        'on_trip' => 'warning',
-                    })
-                    ->formatStateUsing(fn($state) => match ($state) {
-                        'available' => 'Available',
-                        'on_trip' => 'On Trip',
-                        default => 'Unknown',
-                    })
-                    ->sortable(),
-
                 TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime()

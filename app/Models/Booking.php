@@ -2,42 +2,40 @@
 
 namespace App\Models;
 
-use App\Models\User;
+use App\Models\Customer;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\Payment;
 use App\Models\DeliveryOrder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory; 
 
 class Booking extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'customer_name',
+        'email',
         'service_id',
-        'schedule_id', 
+        'schedule_id',
         'booking_code',
         'pickup_date',
-        'pickup_type',
         'pickup_time',
         'phone_number',
         'pickup_location',
         'total_passengers',
         'destination',
-        'price',
+        'base_price',
+        'pickup_fee',
+        'total_price',
         'status',
+        'area',
     ];
 
-    public function user()
+    public function service()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function schedule()
-    {
-        return $this->belongsTo(Schedule::class);
+        return $this->belongsTo(Service::class);
     }
 
     public function payment()
@@ -50,14 +48,14 @@ class Booking extends Model
         return $this->hasOne(DeliveryOrder::class);
     }
 
-    public function service()
+    public function schedule()
     {
-        return $this->belongsTo(Service::class);
+        return $this->belongsTo(Schedule::class);
     }
 
     public function isPaid(): bool
     {
-        return $this->payment_status === 'paid';
+        return $this->payment?->status === 'verified';
     }
 
     public function isConfirmed(): bool

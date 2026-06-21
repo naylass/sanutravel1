@@ -14,6 +14,7 @@ class DriverInfolist
                 TextEntry::make('photo'),
                 TextEntry::make('name'),
                 TextEntry::make('phone'),
+                TextEntry::make('email'),
                 TextEntry::make('birth_place'),
                 TextEntry::make('birth_date')
                     ->date(),

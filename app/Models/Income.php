@@ -17,13 +17,11 @@ class Income extends Model
         'description',
     ];
 
-    // 🔗 RELASI KE PAYMENT
     public function payment()
     {
         return $this->belongsTo(Payment::class);
     }
 
-    // 📊 CHECK TYPE
     public function isBookingIncome(): bool
     {
         return $this->income_type === 'booking';
