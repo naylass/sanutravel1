@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\DriverAssignedCashMail;
+use App\Models\Booking;
 use App\Models\DeliveryOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -32,24 +33,44 @@ class DeliveryOrderController extends Controller
 
     public function startTrip($id)
     {
-        $order = DeliveryOrder::where('driver_id', Auth::id())
+        $order = DeliveryOrder::with('booking')->where('driver_id', Auth::id())
             ->findOrFail($id);
 
-        $order->update([
-            'status' => 'ongoing'
-        ]);
+        $order->update(['status' => 'ongoing']);
+
+        // Update semua booking di schedule yang sama → on_progress
+        if ($order->schedule_id) {
+            Booking::where('schedule_id', $order->schedule_id)
+                ->whereIn('status', ['confirmed', 'scheduled'])
+                ->update(['status' => 'on_progress']);
+        }
+
+        // Fallback: update booking yang langsung relasi ke DO ini
+        if ($order->booking) {
+            $order->booking->update(['status' => 'on_progress']);
+        }
 
         return back()->with('success', 'Perjalanan dimulai');
     }
 
     public function finishTrip($id)
     {
-        $order = DeliveryOrder::where('driver_id', Auth::id())
+        $order = DeliveryOrder::with('booking')->where('driver_id', Auth::id())
             ->findOrFail($id);
 
-        $order->update([
-            'status' => 'completed'
-        ]);
+        $order->update(['status' => 'completed']);
+
+        // Update semua booking di schedule yang sama → completed
+        if ($order->schedule_id) {
+            Booking::where('schedule_id', $order->schedule_id)
+                ->whereIn('status', ['on_progress', 'confirmed'])
+                ->update(['status' => 'completed']);
+        }
+
+        // Fallback
+        if ($order->booking) {
+            $order->booking->update(['status' => 'completed']);
+        }
 
         return back()->with('success', 'Perjalanan selesai');
     }

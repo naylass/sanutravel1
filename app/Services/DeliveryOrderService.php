@@ -7,6 +7,7 @@ use App\Models\DeliveryOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DeliveryOrderCreatedMail;
+use App\Mail\DriverAssignedCashMail;
 
 class DeliveryOrderService
 {
@@ -14,79 +15,74 @@ class DeliveryOrderService
     {
         return DB::transaction(function () use ($data) {
 
-            // 🔥 LOAD RELATION YANG ADA AJA
             $booking = Booking::with([
                 'schedule.driver',
-                'schedule.vehicle'
+                'schedule.vehicle',
+                'payment',
             ])->findOrFail($data['booking_id']);
 
             $schedule = $booking->schedule;
 
-            // 🚫 BELUM ADA DRIVER / MOBIL
-            if (
-                !$schedule ||
-                !$schedule->driver_id ||
-                !$schedule->vehicle_id
-            ) {
-
-                throw new \Exception(
-                    'Schedule belum lengkap'
-                );
+            if (!$schedule || !$schedule->driver_id || !$schedule->vehicle_id) {
+                throw new \Exception('Schedule belum lengkap');
             }
 
-            // 🚫 SUDAH PUNYA DO
-            if (
-                DeliveryOrder::where(
-                    'booking_id',
-                    $booking->id
-                )->exists()
-            ) {
-
-                throw new \Exception(
-                    'Delivery Order sudah ada'
-                );
+            if (DeliveryOrder::where('booking_id', $booking->id)->exists()) {
+                throw new \Exception('Delivery Order sudah ada');
             }
 
-            // ✅ CREATE DELIVERY ORDER
             $deliveryOrder = DeliveryOrder::create([
-
-                'booking_id' => $booking->id,
-
-                'driver_id' => $schedule->driver_id,
-
-                'vehicle_id' => $schedule->vehicle_id,
-
-                'schedule_id' => $schedule->id,
-
+                'booking_id'     => $booking->id,
+                'driver_id'      => $schedule->driver_id,
+                'vehicle_id'     => $schedule->vehicle_id,
+                'schedule_id'    => $schedule->id,
                 'departure_date' => $schedule->departure_date,
-
                 'departure_time' => $schedule->departure_time,
-
-                // 🔥 INI YANG BENAR
-                'pickup_point' => $booking->pickup_location,
-
-                'destination' => $booking->destination,
-
-                'status' => 'prepared',
+                'pickup_point'   => $booking->pickup_location,
+                'destination'    => $booking->destination,
+                'status'         => 'prepared',
             ]);
 
-            // 🔥 LOAD RELATION YANG VALID
+            $booking->update(['status' => 'confirmed']);
+
+            if ($schedule) {
+                Booking::where('schedule_id', $schedule->id)
+                    ->where('id', '!=', $booking->id)
+                    ->whereIn('status', ['pending'])
+                    ->whereHas(
+                        'payment',
+                        fn($q) =>
+                        $q->whereIn('status', ['verified', 'settled', 'cash_received'])
+                    )
+                    ->update(['status' => 'confirmed']);
+            }
+
             $deliveryOrder->load([
                 'booking',
                 'driver',
                 'vehicle',
-                'schedule'
+                'schedule',
             ]);
 
-            // 📧 EMAIL DRIVER
-            if ($deliveryOrder->driver?->email) {
+            if (!empty($deliveryOrder->driver?->email)) {
+                try {
+                    Mail::to($deliveryOrder->driver->email)
+                        ->send(new DeliveryOrderCreatedMail($deliveryOrder));
+                } catch (\Exception $e) {
+                    logger('EMAIL DO ERROR: ' . $e->getMessage());
+                }
+            }
 
-                Mail::to($deliveryOrder->driver->email)
-                    ->send(
-                        new DeliveryOrderCreatedMail(
-                            $deliveryOrder
-                        )
-                    );
+            if (
+                !empty($deliveryOrder->driver?->email) &&
+                $booking->payment?->payment_method === 'cash'
+            ) {
+                try {
+                    Mail::to($deliveryOrder->driver->email)
+                        ->send(new DriverAssignedCashMail($booking));
+                } catch (\Exception $e) {
+                    logger('EMAIL CASH REMINDER ERROR: ' . $e->getMessage());
+                }
             }
 
             return $deliveryOrder;
