@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 
 class DeliveryOrderController extends Controller
 {
-
     public function index()
     {
         $orders = DeliveryOrder::where('driver_id', Auth::id())
@@ -33,21 +32,24 @@ class DeliveryOrderController extends Controller
 
     public function startTrip($id)
     {
-        $order = DeliveryOrder::with('booking')->where('driver_id', Auth::id())
+        $order = DeliveryOrder::with(['booking', 'schedule'])
+            ->where('driver_id', Auth::id())
             ->findOrFail($id);
 
         $order->update(['status' => 'ongoing']);
 
-        // Update semua booking di schedule yang sama → on_progress
+        // Update semua booking di schedule yang sama
         if ($order->schedule_id) {
             Booking::where('schedule_id', $order->schedule_id)
-                ->whereIn('status', ['confirmed', 'scheduled'])
+                ->whereNotIn('status', ['cancelled', 'completed'])
                 ->update(['status' => 'on_progress']);
         }
 
-        // Fallback: update booking yang langsung relasi ke DO ini
-        if ($order->booking) {
-            $order->booking->update(['status' => 'on_progress']);
+        // Fallback: booking langsung relasi ke DO ini
+        if ($order->booking_id) {
+            Booking::where('id', $order->booking_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->update(['status' => 'on_progress']);
         }
 
         return back()->with('success', 'Perjalanan dimulai');
@@ -55,21 +57,24 @@ class DeliveryOrderController extends Controller
 
     public function finishTrip($id)
     {
-        $order = DeliveryOrder::with('booking')->where('driver_id', Auth::id())
+        $order = DeliveryOrder::with(['booking', 'schedule'])
+            ->where('driver_id', Auth::id())
             ->findOrFail($id);
 
         $order->update(['status' => 'completed']);
 
-        // Update semua booking di schedule yang sama → completed
+        // Update semua booking di schedule yang sama
         if ($order->schedule_id) {
             Booking::where('schedule_id', $order->schedule_id)
-                ->whereIn('status', ['on_progress', 'confirmed'])
+                ->whereNotIn('status', ['cancelled', 'completed'])
                 ->update(['status' => 'completed']);
         }
 
-        // Fallback
-        if ($order->booking) {
-            $order->booking->update(['status' => 'completed']);
+        // Fallback: booking langsung relasi ke DO ini
+        if ($order->booking_id) {
+            Booking::where('id', $order->booking_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->update(['status' => 'completed']);
         }
 
         return back()->with('success', 'Perjalanan selesai');
@@ -78,9 +83,9 @@ class DeliveryOrderController extends Controller
     public function store($schedule_id)
     {
         $order = DeliveryOrder::create([
-            'driver_id' => Auth::id(),
+            'driver_id'   => Auth::id(),
             'schedule_id' => $schedule_id,
-            'status' => 'pending',
+            'status'      => 'pending',
         ]);
 
         $order->load([
@@ -96,21 +101,15 @@ class DeliveryOrderController extends Controller
             $booking->payment &&
             $booking->payment->payment_method === 'cash'
         ) {
-
             try {
-
                 if (!empty($order->driver?->email)) {
-
                     Mail::to($order->driver->email)
-                        ->send(
-                            new DriverAssignedCashMail($booking)
-                        );
+                        ->send(new DriverAssignedCashMail($booking));
                 }
             } catch (\Exception $e) {
-
                 logger('EMAIL DRIVER CASH ERROR: ' . $e->getMessage(), [
-                    'order_id' => $order->id,
-                    'driver_id' => $order->driver_id ?? null
+                    'order_id'  => $order->id,
+                    'driver_id' => $order->driver_id ?? null,
                 ]);
             }
         }
@@ -118,15 +117,12 @@ class DeliveryOrderController extends Controller
         return response()->json($order);
     }
 
-
     public function updateStatus($id, Request $request)
     {
         $order = DeliveryOrder::where('driver_id', Auth::id())
             ->findOrFail($id);
 
-        $order->update([
-            'status' => $request->status
-        ]);
+        $order->update(['status' => $request->status]);
 
         return back()->with('success', 'Status diperbarui');
     }

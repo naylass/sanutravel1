@@ -235,7 +235,7 @@
                                 <option value="">Pilih area penjemputan</option>
                                 <option value="cilegon">Cilegon</option>
                                 <option value="serang">Serang</option>
-                                <option value="lainnya">Luar Area (+Rp 100.000)</option>
+                                <option value="lainnya">Luar Area </option>
                             </select>
                         </div>
                     </div>
